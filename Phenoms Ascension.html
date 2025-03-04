@@ -374,16 +374,16 @@
             // Stop music and transition after a short delay
             this.time.delayedCall(700, () => {
               this.theme.stop();
-              this.scene.start('StoryScene', { level: 1, lives: 999, score: 0 }); // Debug
-              // Real this.scene.start('StoryScene', { level: 1, lives: 3, score: 0 });
+              // this.scene.start('StoryScene', { level: 1, lives: 999, score: 0 }); // Debug
+              this.scene.start('StoryScene', { level: 1, lives: 3, score: 0 }); // Real 
             });
           });
 
         // Add keyboard control
         this.input.keyboard.on('keydown-SPACE', () => {
           this.theme.stop();
-          this.scene.start('StoryScene', { level: 1, lives: 999, score: 0 }); // Debug
-          // this.scene.start('StoryScene', { level: 1, lives: 3, score: 0 }); // Real
+          // this.scene.start('StoryScene', { level: 1, lives: 999, score: 0 }); // Debug
+          this.scene.start('StoryScene', { level: 1, lives: 3, score: 0 }); // Real
         });
 
         // Add small credit at bottom
