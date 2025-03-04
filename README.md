@@ -1,6 +1,6 @@
 # **Phenom's Ascension**  
 
-![](https://images.type.ai/img_5vS0YVM5OHpJwlvAHj.png)  
+![](https://github.com/ojomusi/Phenom-s-Ascension/blob/main/assets/images/backgrounds/landing.png)  
 
 ## **Overview**  
 
