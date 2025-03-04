@@ -1,0 +1,309 @@
+ this.load.on('progress', (value) => {
+      document.getElementById('loading').innerText = `Loading... ${Math.round(value * 100)}%`;
+    });
+    this.load.on('complete', () => {
+      document.getElementById('loading').style.display = 'none';
+      this.scene.start('PreloadScene');
+    });
+
+Here's the completion of the HTML extract script and the instructions to modify your game code to use the extracted images and remove audio:
+
+## Continuing the extract-images.html file:
+
+```javascript
+      // Rounded rectangle 
+      ctx.beginPath();
+      ctx.roundRect(0, 0, 200, 50, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      return {
+        name: 'button',
+        canvas,
+        dataUrl: canvas.toDataURL('image/png')
+      };
+    }
+
+    // Generate all images
+    function generateAllImages() {
+      const images = [];
+ 
+      // Backgrounds
+      const backgrounds = createBaseBackgrounds();
+      images.push(...backgrounds);
+ 
+      // Sprites
+      images.push(createPlayerSpritesheet());
+      images.push(createDanteSpritesheet());
+      images.push(createEnemySpritesheet());
+      images.push(createBossSpritesheet());
+      images.push(createNaomiSpritesheet());
+ 
+      // Effects and UI
+      images.push(createSparkImage());
+      images.push(createArrowImage());
+      images.push(createButtonImage());
+ 
+      return images;
+    }
+
+    // Create image containers and download buttons
+    function displayImages(images) {
+      const container = document.getElementById('image-containers');
+ 
+      images.forEach(image => {
+        const imageContainer = document.createElement('div');
+        imageContainer.className = 'image-container';
+ 
+        const title = document.createElement('h2');
+        title.textContent = image.name;
+ 
+        const canvas = image.canvas;
+ 
+        const downloadButton = document.createElement('button');
+        downloadButton.textContent = `Download ${image.name}.png`;
+        downloadButton.onclick = () => downloadImage(image.dataUrl, `${image.name}.png`);
+ 
+        const dimensions = document.createElement('p');
+        dimensions.textContent = `Dimensions: ${canvas.width}x${canvas.height}`;
+ 
+        imageContainer.appendChild(title);
+        imageContainer.appendChild(canvas);
+        imageContainer.appendChild(dimensions);
+        imageContainer.appendChild(downloadButton);
+ 
+        container.appendChild(imageContainer);
+      });
+    }
+
+    // Function to download an image
+    function downloadImage(dataUrl, filename) {
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Download all images as a zip file
+    function downloadAllImages(images) {
+      // Create a list of all images that need to be downloaded
+      const list = document.createElement('div');
+      list.innerHTML = '<h3>Manual Download Instructions:</h3><p>Since we\'re not using a zip library, please download each image individually by clicking the buttons below:</p>';
+ 
+      const folderStructure = document.createElement('pre');
+      folderStructure.textContent = `assets/
+├── images/
+│   ├── backgrounds/
+│   │   ├── bg_level1.png
+│   │   ├── bg_level2.png
+│   │   ├── bg_level3.png
+│   │   ├── bg_level4.png
+│   │   └── bg_level5.png
+│   ├── sprites/
+│   │   ├── joel.png
+│   │   ├── dante.png
+│   │   ├── enemy.png
+│   │   ├── boss.png
+│   │   └── naomi.png
+│   ├── effects/
+│   │   ├── spark.png
+│   │   └── arrow.png
+│   └── ui/
+│       └── button.png`;
+ 
+      document.body.appendChild(list);
+      document.body.appendChild(folderStructure);
+ 
+      // Create a download all button for each category
+      const categories = {
+        backgrounds: images.filter(img => img.name.startsWith('bg_')),
+        sprites: ['joel', 'dante', 'enemy', 'boss', 'naomi'].map(name => 
+          images.find(img => img.name === name)
+        ),
+        effects: ['spark', 'arrow'].map(name => 
+          images.find(img => img.name === name)
+        ),
+        ui: images.filter(img => img.name === 'button')
+      };
+ 
+      Object.entries(categories).forEach(([category, categoryImages]) => {
+        const categoryTitle = document.createElement('h3');
+        categoryTitle.textContent = `${category.charAt(0).toUpperCase() + category.slice(1)}:`;
+        document.body.appendChild(categoryTitle);
+ 
+        categoryImages.forEach(image => {
+          const btn = document.createElement('button');
+          btn.textContent = `Download ${image.name}.png`;
+          btn.style.margin = '5px';
+          btn.onclick = () => downloadImage(image.dataUrl, `${image.name}.png`);
+          document.body.appendChild(btn);
+        });
+      });
+    }
+
+    // Generate and display all images when the page loads
+    window.onload = function() {
+      const images = generateAllImages();
+      displayImages(images);
+ 
+      document.getElementById('download-all').addEventListener('click', () => {
+        downloadAllImages(images);
+      });
+    };
+  </script>
+</body>
+</html>
+```
+
+## Step 2: Using the Extracted Images
+
+Once you've used the tool to extract and download all the images, create the following folder structure in your project:
+
+```
+assets/
+├── images/
+│   ├── backgrounds/
+│   │   ├── bg_level1.png
+│   │   ├── bg_level2.png
+│   │   ├── bg_level3.png
+│   │   ├── bg_level4.png
+│   │   └── bg_level5.png
+│   ├── sprites/
+│   │   ├── joel.png
+│   │   ├── dante.png
+│   │   ├── enemy.png
+│   │   ├── boss.png
+│   │   └── naomi.png
+│   ├── effects/
+│   │   ├── spark.png
+│   │   └── arrow.png
+│   └── ui/
+│       └── button.png
+```
+
+## Step 3: Modify Your Game Code
+
+Now, you need to modify your game code to use these images instead of generating them on the fly. Here's how to update the `PreloadScene` class:
+
+1. First, replace the entire `preload()` method in your `PreloadScene` class with this:
+
+```javascript
+preload() {
+  // Create a loading bar
+  const progressBar = this.add.graphics();
+  const progressBox = this.add.graphics();
+  progressBox.fillStyle(0x222222, 0.8);
+  progressBox.fillRect(240, 270, 320, 50);
+ 
+  const width = this.cameras.main.width;
+  const height = this.cameras.main.height;
+  const loadingText = this.make.text({
+    x: width / 2,
+    y: height / 2 - 50,
+    text: 'Loading...',
+    style: {
+      font: '20px monospace',
+      fill: '#ffffff'
+    }
+  });
+  loadingText.setOrigin(0.5, 0.5);
+ 
+  this.load.on('progress', function (value) {
+    progressBar.clear();
+    progressBar.fillStyle(0xe74c3c, 1);
+    progressBar.fillRect(250, 280, 300 * value, 30);
+    console.log('Loading progress: ' + Math.round(value * 100) + '%');
+  });
+
+  this.load.on('complete', function () {
+    console.log('All assets loaded!');
+    progressBar.destroy();
+    progressBox.destroy();
+    loadingText.destroy();
+    document.getElementById('loading').style.display = 'none';
+  });
+
+  // Load background images
+  this.load.image('bg_level1', 'assets/images/backgrounds/bg_level1.png');
+  this.load.image('bg_level2', 'assets/images/backgrounds/bg_level2.png');
+  this.load.image('bg_level3', 'assets/images/backgrounds/bg_level3.png');
+  this.load.image('bg_level4', 'assets/images/backgrounds/bg_level4.png');
+  this.load.image('bg_level5', 'assets/images/backgrounds/bg_level5.png');
+
+  // Load spritesheets
+  this.load.spritesheet('joel', 'assets/images/sprites/joel.png', { frameWidth: 64, frameHeight: 64 });
+  this.load.spritesheet('dante', 'assets/images/sprites/dante.png', { frameWidth: 64, frameHeight: 64 });
+  this.load.spritesheet('enemy', 'assets/images/sprites/enemy.png', { frameWidth: 64, frameHeight: 64 });
+  this.load.spritesheet('boss', 'assets/images/sprites/boss.png', { frameWidth: 128, frameHeight: 128 });
+  this.load.spritesheet('naomi', 'assets/images/sprites/naomi.png', { frameWidth: 64, frameHeight: 64 });
+
+  // Load particle effects and projectiles
+  this.load.image('spark', 'assets/images/effects/spark.png');
+  this.load.image('arrow', 'assets/images/effects/arrow.png');
+
+  // Load UI elements
+  this.load.image('button', 'assets/images/ui/button.png');
+ 
+  // Audio is commented out as requested
+  // this.load.audio('theme', ['assets/audio/theme.mp3']);
+  // this.load.audio('hit', ['assets/audio/hit.mp3']);
+  // this.load.audio('shoot', ['assets/audio/shoot.mp3']);
+  // this.load.audio('levelup', ['assets/audio/levelup.mp3']);
+}
+```
+
+1. Remove all these creation methods from your PreloadScene class (delete these functions entirely):
+   - createBaseBackgrounds()
+   - createPlayerSpritesheet()
+   - createDanteSpritesheet()
+   - createEnemySpritesheet()
+   - createBossSpritesheet()
+   - createNaomiSpritesheet()
+   - createSparkImage()
+   - createArrowImage()
+   - createButtonImage()
+   - createThemeAudio()
+   - createHitSound()
+   - createShootSound()
+   - createLevelUpSound()
+2. Modify all references to audio in your code:
+
+Find all instances of audio playback in your code like:
+
+```javascript
+this.theme = this.sound.add('theme', { loop: true, volume: 0.5 });
+this.theme.play();
+```
+
+And replace them with no-op functions:
+
+```javascript
+this.theme = { 
+  play: function() {}, 
+  stop: function() {} 
+};
+```
+
+Similarly, for sound effects like:
+
+```javascript
+this.sound.play('hit');
+```
+
+Replace with:
+
+```javascript
+// Audio disabled
+// this.sound.play('hit');
+```
+
+## Step 4: Test Your Game with VSCode Live Server
+
+1. Make sure all your image files are in the correct folders
+2. Open your index.html in VSCode
+3. Right-click and select "Open with Live Server"
+4. The game should now run using the extracted image files instead of generating them on the fly
+
+This approach will be much more efficient as the browser can cache the image files, and the game won't need to regenerate them each time it loads.

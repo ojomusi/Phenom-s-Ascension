@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Phenom's Ascension</title>
+  <!-- Phaser 3 from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+  <style>
+    body { 
+      margin: 0; 
+      background: #000; 
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Arial', sans-serif;
+    }
+    canvas { 
+      display: block; 
+      margin: 0 auto; 
+      border: 2px solid #333;
+      box-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
+    }
+    #loading {
+      color: white;
+      font-size: 24px;
+      position: absolute;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<div id="loading">Loading Phenom's Ascension...</div>
+<script>
+// GAME CONFIGURATION
+const config = {
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  backgroundColor: '#111',
+  physics: {
+    default: 'arcade',
+    arcade: { 
+      gravity: { y: 500 }, 
+      debug: false 
+    }
+  },
+  scene: [],
+  pixelArt: true
+};
+
+// GAME STATE MANAGEMENT
+const GAME_STATE = {
+  playerStats: {
+    agility: 1,
+    endurance: 1,
+    respect: 0,
+    mentalFortitude: 1,
+    archerySkill: 1,
+    stealth: 1,
+    reflexes: 1,
+    dodgeReflex: 1,
+    precision: 1,
+    toughness: 1
+  },
+  maxStats: 5
+};
+
+// BOOT SCENE: Initialize the game and transition to asset loading.
+class BootScene extends Phaser.Scene {
+  constructor() {
+    super('BootScene');
+  }
+
+  preload() {
+    // Create a loading bar
+    const progressBar = this.add.graphics();
+    const progressBox = this.add.graphics();
+    progressBox.fillStyle(0x222222, 0.8);
+    progressBox.fillRect(240, 270, 320, 50);
+
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    const loadingText = this.make.text({
+      x: width / 2,
+      y: height / 2 - 50,
+      text: 'Loading...',
+      style: {
+        font: '20px monospace',
+        fill: '#ffffff'
+      }
+    });
+    loadingText.setOrigin(0.5, 0.5);
+
+    this.load.on('progress', function (value) {
+      progressBar.clear();
+      progressBar.fillStyle(0xe74c3c, 1);
+      progressBar.fillRect(250, 280, 300 * value, 30);
+    });
+
+    this.load.on('complete', function () {
+      progressBar.destroy();
+      progressBox.destroy();
+      loadingText.destroy();
+      document.getElementById('loading').style.display = 'none';
+    });
+  }
+
+  create() {
+    this.scene.start('PreloadScene');
+  }
+}
+
+// PRELOAD SCENE: Load all assets (sprites, backgrounds, particle images, etc.)
+class PreloadScene extends Phaser.Scene {
+  constructor() {
+    super('PreloadScene');
+  }
+
+  preload() {
+    // Create base64 backgrounds to avoid external file dependencies
+    this.createBaseBackgrounds();
+
+    // Load spritesheets from base64 data URIs (to avoid external file dependencies)
+    this.load.spritesheet('joel', this.createPlayerSpritesheet(), { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('dante', this.createDanteSpritesheet(), { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('enemy', this.createEnemySpritesheet(), { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('boss', this.createBossSpritesheet(), { frameWidth: 128, frameHeight: 128 });
+    this.load.spritesheet('naomi', this.createNaomiSpritesheet(), { frameWidth: 64, frameHeight: 64 });
+
+    // Load assets for particle effects
+    this.load.image('spark', this.createSparkImage());
+    this.load.image('arrow', this.createArrowImage());
+
+    // Load audio files
+    this.load.audio('theme', [this.createThemeAudio()]);
+    this.load.audio('hit', [this.createHitSound()]);
+    this.load.audio('shoot', [this.createShootSound()]);
+    this.load.audio('levelup', [this.createLevelUpSound()]);
+
+    // UI elements
+    this.load.image('button', this.createButtonImage());
+  }
+
+  create() {
+    // Create animations for Joel
+    this.anims.create({
+      key: 'joel_idle',
+      frames: this.anims.generateFrameNumbers('joel', { start: 0, end: 3 }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'joel_run',
+      frames: this.anims.generateFrameNumbers('joel', { start: 4, end: 11 }),
+      frameRate: 12,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'joel_attack',
+      frames: this.anims.generateFrameNumbers('joel', { start: 12, end: 15 }),
+      frameRate: 15,
+      repeat: 0
+    });
+
+    this.anims.create({
+      key: 'joel_shoot',
+      frames: this.anims.generateFrameNumbers('joel', { start: 16, end: 19 }),
+      frameRate: 15,
+      repeat: 0
+    });
+
+    this.anims.create({
+      key: 'joel_hurt',
+      frames: this.anims.generateFrameNumbers('joel', { start: 20, end: 22 }),
+      frameRate: 8,
+      repeat: 0
+    });
+
+    // Create animations for enemies
+    this.anims.create({
+      key: 'enemy_walk',
+      frames: this.anims.generateFrameNumbers('enemy', { start: 0, end: 7 }),
+      frameRate: 10,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'enemy_attack',
+      frames: this.anims.generateFrameNumbers('enemy', { start: 8, end: 11 }),
+      frameRate: 10,
+      repeat: 0
+    });
+
+    this.anims.create({
+      key: 'enemy_hurt',
+      frames: this.anims.generateFrameNumbers('enemy', { start: 12, end: 14 }),
+      frameRate: 8,
+      repeat: 0
+    });
+
+    // Create animations for boss (Kain)
+    this.anims.create({
+      key: 'boss_idle',
+      frames: this.anims.generateFrameNumbers('boss', { start: 0, end: 3 }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'boss_attack',
+      frames: this.anims.generateFrameNumbers('boss', { start: 4, end: 9 }),
+      frameRate: 12,
+      repeat: 0
+    });
+
+    this.anims.create({
+      key: 'boss_special',
+      frames: this.anims.generateFrameNumbers('boss', { start: 10, end: 15 }),
+      frameRate: 10,
+      repeat: 0
+    });
+
+    // Start the main menu
+    this.scene.start('MainMenuScene');
+  }
+
+  // Methods to create all assets from code to avoid external dependencies
+  createBaseBackgrounds() {
+    // Create simple gradient backgrounds for each level
+    // Level 1: Hunter Association HQ (blue/grey tones)
+    const bg1 = this.textures.createCanvas('bg_level1', 800, 600);
+    const ctx1 = bg1.getContext();
+    const grd1 = ctx1.createLinearGradient(0, 0, 0, 600);
+    grd1.addColorStop(0, '#2c3e50');
+    grd1.addColorStop(1, '#34495e');
+    ctx1.fillStyle = grd1;
+    ctx1.fillRect(0, 0, 800, 600);
+
+    // Add simple building silhouettes
+    ctx1.fillStyle = '#1a2530';
+    for(let i = 0; i < 10; i++) {
+      const width = 60 + Math.random() * 40;
+      const height = 150 + Math.random() * 250;
+      const x = i * 80;
+      ctx1.fillRect(x, 600 - height, width, height);
+    }
+    bg1.refresh();
+
+    // Level 2: Warehouse Training (dark, industrial)
+    const bg2 = this.textures.createCanvas('bg_level2', 800, 600);
+    const ctx2 = bg2.getContext();
+    const grd2 = ctx2.createLinearGradient(0, 0, 800, 0);
+    grd2.addColorStop(0, '#1e272e');
+    grd2.addColorStop(1, '#2d3436');
+    ctx2.fillStyle = grd2;
+    ctx2.fillRect(0, 0, 800, 600);
+
+    // Add warehouse elements
+    ctx2.fillStyle = '#111';
+    ctx2.fillRect(100, 300, 600, 300); // Floor
+    ctx2.fillStyle = '#393e46';
+    for(let i = 0; i < 5; i++) {
+      ctx2.fillRect(150 + i*120, 350, 80, 80); // Crates
+    }
+    bg2.refresh();
+
+    // Level 3: Dungeon/Temple (dark with red energy)
+    const bg3 = this.textures.createCanvas('bg_level3', 800, 600);
+    const ctx3 = bg3.getContext();
+    ctx3.fillStyle = '#0d0d0d';
+    ctx3.fillRect(0, 0, 800, 600);
+
+    // Add red energy veins
+    ctx3.strokeStyle = '#e74c3c';
+    ctx3.lineWidth = 2;
+    for(let i = 0; i < 20; i++) {
+      ctx3.beginPath();
+      ctx3.moveTo(Math.random() * 800, Math.random() * 600);
+      ctx3.lineTo(Math.random() * 800, Math.random() * 600);
+      ctx3.stroke();
+    }
+
+    // Add temple ruins
+    ctx3.fillStyle = '#2d3436';
+    for(let i = 0; i < 5; i++) {
+      ctx3.fillRect(50 + i*160, 400, 100, 200);
+    }
+    bg3.refresh();
+
+    // Level 4: Urban Chase (city at night)
+    const bg4 = this.textures.createCanvas('bg_level4', 800, 600);
+    const ctx4 = bg4.getContext();
+    const grd4 = ctx4.createLinearGradient(0, 0, 0, 600);
+    grd4.addColorStop(0, '#0a0e17');
+    grd4.addColorStop(1, '#1f2937');
+    ctx4.fillStyle = grd4;
+    ctx4.fillRect(0, 0, 800, 600);
+
+    // City buildings
+    for(let i = 0; i < 15; i++) {
+      const w = 40 + Math.random() * 60;
+      const h = 100 + Math.random() * 300;
+      const x = i * 60;
+      const y = 600 - h;
+
+      ctx4.fillStyle = '#131c2e';
+      ctx4.fillRect(x, y, w, h);
+
+      // Windows
+      ctx4.fillStyle = '#f1c40f';
+      for(let j = 0; j < 10; j++) {
+        if(Math.random() > 0.5) {
+          ctx4.fillRect(x + 10 + Math.random() * (w-20), y + 10 + j*30, 5, 10);
+        }
+      }
+    }
+    bg4.refresh();
+
+    // Level 5: Fortress Assault (final battle)
+    const bg5 = this.textures.createCanvas('bg_level5', 800, 600);
+    const ctx5 = bg5.getContext();
+    const grd5 = ctx5.createLinearGradient(0, 0, 800, 600);
+    grd5.addColorStop(0, '#641e16');
+    grd5.addColorStop(1, '#922b21');
+    ctx5.fillStyle = grd5;
+    ctx5.fillRect(0, 0, 800, 600);
+
+    // Fortress elements
+    ctx5.fillStyle = '#1a0f0c';
+    ctx5.fillRect(100, 200, 600, 400); // Main fortress
+
+    // Glow effects
+    ctx5.shadowColor = '#f39c12';
+    ctx5.shadowBlur = 20;
+    ctx5.fillStyle = '#e74c3c';
+    ctx5.beginPath();
+    ctx5.arc(400, 400, 50, 0, Math.PI * 2);
+    ctx5.fill();
+    bg5.refresh();
+  }
+
+  createPlayerSpritesheet() {
+    // Create a base64 data URI for Joel's spritesheet
+    const canvas = document.createElement('canvas');
+    canvas.width = 1344; // 64px * 21 frames
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+
+    // Clear with transparent background
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw simple stick figure for each frame (would be better art in a real game)
+    for(let i = 0; i < 21; i++) {
+      const x = i * 64 + 32;
+      const y = 32;
+
+      // Head
+      ctx.fillStyle = '#ecf0f1';
+      ctx.beginPath();
+      ctx.arc(x, y - 20, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Body with different poses based on frame number
+      ctx.strokeStyle = '#3498db';
+      ctx.lineWidth = 4;
+
+      // Different poses based on frame sets
+      if (i < 4) { // Idle
+        const offset = Math.sin(i * Math.PI/2) * 2; // Slight up/down motion
+        ctx.beginPath();
+        ctx.moveTo(x, y - 8);
+        ctx.lineTo(x, y + 15);
+        ctx.stroke();
+
+        // Arms
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 10, y + offset);
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 10, y - offset);
+        ctx.stroke();
+
+        // Legs
+        ctx.beginPath();
+        ctx.moveTo(x, y + 15);
+        ctx.lineTo(x - 8, y + 32);
+        ctx.moveTo(x, y + 15);
+        ctx.lineTo(x + 8, y + 32);
+        ctx.stroke();
+      } 
+      else if (i >= 4 && i < 12) { // Run
+        const runOffset = (i % 2 === 0) ? 5 : -5;
+        ctx.beginPath();
+        ctx.moveTo(x, y - 8);
+        ctx.lineTo(x, y + 15);
+        ctx.stroke();
+
+        // Arms swinging
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 12, y + runOffset);
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 12, y - runOffset);
+        ctx.stroke();
+
+        // Legs running
+        ctx.beginPath();
+        ctx.moveTo(x, y + 15);
+        ctx.lineTo(x - 10, y + 32 + runOffset);
+        ctx.moveTo(x, y + 15);
+        ctx.lineTo(x + 10, y + 32 - runOffset);
+        ctx.stroke();
+      }
+      else if (i >= 12 && i < 16) { // Attack
+        const attackPhase = i - 12;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y - 8);
+        ctx.lineTo(x, y + 15);
+        ctx.stroke();
+
+        // Arms attacking
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 8, y);
+
+        // Attacking arm extends based on phase
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 10 + attackPhase * 5, y);
+        ctx.stroke();
+
+        // Legs in fighting stance
+        ctx.beginPath();
+        ctx.moveTo(x, y + 15);
+        ctx.lineTo(x - 12, y + 32);
+        ctx.moveTo(x, y + 15);
+        ctx.lineTo(x + 5, y + 32);
+        ctx.stroke();
+
+        // Draw weapon
+        ctx.strokeStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.moveTo(x + 15 + attackPhase * 5, y - 5);
+        ctx.lineTo(x + 22 + attackPhase * 5, y + 5);
+        ctx.stroke();
+      }
+      else if (i >= 16 && i < 20) { // Shoot
+        const shootPhase = i - 16;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y - 8);
+        ctx.lineTo(x, y + 15);
+        ctx.stroke();
+
+        // Bow arm
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 15, y - 5);
+        ctx.stroke();
+
+        // Draw bow
+        ctx.strokeStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.moveTo(x + 15, y - 15);
+        ctx.lineTo(x + 15, y + 5);
+        ctx.stroke();
+
+        // Other arm pulling bowstring
+        ctx.strokeStyle = '#3498db';
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 10 - shootPhase * 3, y);
+        ctx.stroke();
+
+        // Legs in archer stance
+        ctx.beginPath();
+        ctx.moveTo(x, y + 15);
+        ctx.lineTo(x - 10, y + 32);
+        ctx.moveTo(x, y + 15);
+        ctx.lineTo(x + 5, y + 32);
+        ctx.stroke();
+
+        // Draw arrow (only on later frames)
+        if (shootPhase > 1) {
+          ctx.strokeStyle = '#f39c12';
+          ctx.beginPath();
+          ctx.moveTo(x + 15, y);
+          ctx.lineTo(x + 30, y);
+          ctx.stroke();
+        }
+      }
+      else { // Hurt
+        const hurtPhase = i - 20;
+
+        // Tilted body for hurt animation
+        ctx.beginPath();
+        ctx.moveTo(x, y - 8);
+        ctx.lineTo(x - 5, y + 15);
+        ctx.stroke();
+
+        // Arms flailing
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 12, y + 5);
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 8, y + 8);
+        ctx.stroke();
+
+        // Legs buckling
+        ctx.beginPath();
+        ctx.moveTo(x - 5, y + 15);
+        ctx.lineTo(x - 15, y + 28);
+        ctx.moveTo(x - 5, y + 15);
+        ctx.lineTo(x + 5, y + 28);
+        ctx.stroke();
+      }
+    }
+
+    return canvas.toDataURL();
+  }
+
+  createDanteSpritesheet() {
+    // Simple version of Dante's spritesheet (similar format to Joel's)
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; // 4 frames for now (could expand)
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+
+    // Clear with transparent background
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw simple figure for each frame
+    for(let i = 0; i < 4; i++) {
+      const x = i * 64 + 32;
+      const y = 32;
+
+      // Head
+      ctx.fillStyle = '#95a5a6';
+      ctx.beginPath();
+      ctx.arc(x, y - 20, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Body
+      ctx.strokeStyle = '#7f8c8d';
+      ctx.lineWidth = 4;
+
+      // Static mentor pose
+      ctx.beginPath();
+      ctx.moveTo(x, y - 8);
+      ctx.lineTo(x, y + 15);
+      ctx.stroke();
+
+      // Arms crossed
+      ctx.beginPath();
+      ctx.moveTo(x - 12, y);
+      ctx.lineTo(x + 12, y);
+      ctx.stroke();
+
+      // Legs
+      ctx.beginPath();
+      ctx.moveTo(x, y + 15);
+      ctx.lineTo(x - 10, y + 32);
+      ctx.moveTo(x, y + 15);
+      ctx.lineTo(x + 10, y + 32);
+      ctx.stroke();
+    }
+
+    return canvas.toDataURL();
+  }
+
+  createEnemySpritesheet() {
+    // Enemy spritesheet
+    const canvas = document.createElement('canvas');
+    canvas.width = 960; // 15 frames
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+
+    // Clear with transparent background
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw enemies (red color scheme to contrast with player)
+    for(let i = 0; i < 15; i++) {
+      const x = i * 64 + 32;
+      const y = 32;
+
+      // Head
+      ctx.fillStyle = '#922b21';
+      ctx.beginPath();
+      ctx.arc(x, y - 20, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Body with different poses
+      ctx.strokeStyle = '#c0392b';
+      ctx.lineWidth = 4;
+
+      if (i < 8) { // Walking
+        const walkOffset = Math.sin(i * Math.PI/2) * 3;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y - 8);
+        ctx.lineTo(x, y + 15);
+        ctx.stroke();
+
+        // Arms
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 12, y + walkOffset);
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 12, y - walkOffset);
+        ctx.stroke();
+
+        // Legs
+        ctx.beginPath();
+        ctx.moveTo(x, y + 15);
+        ctx.lineTo(x - 10, y + 32 + walkOffset);
+        ctx.moveTo(x, y + 15);
+        ctx.lineTo(x + 10, y + 32 - walkOffset);
+        ctx.stroke();
+      }
+      else if (i >= 8 && i < 12) { // Attack
+        const attackPhase = i - 8;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y - 8);
+        ctx.lineTo(x, y + 15);
+        ctx.stroke();
+
+        // Attacking arms
+        if (attackPhase < 2) {
+          // Wind up
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x - 15 - attackPhase * 5, y);
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + 10, y);
+          ctx.stroke();
+        } else {
+          // Strike
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x - 5, y);
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + 18, y);
+          ctx.stroke();
+        }
+
+        // Legs in stance
+        ctx.beginPath();
+        ctx.moveTo(x, y + 15);
+        ctx.lineTo(x - 12, y + 32);
+        ctx.moveTo(x, y + 15);
+        ctx.lineTo(x + 5, y + 32);
+        ctx.stroke();
+      }
+      else { // Hurt
+        const hurtPhase = i - 12;
+
+        // Tilted body for hurt animation
+        ctx.beginPath();
+        ctx.moveTo(x, y - 8);
+        ctx.lineTo(x + 5, y + 15);
+        ctx.stroke();
+
+        // Arms flailing
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 8, y + 8);
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 12, y + 5);
+        ctx.stroke();
+
+        // Legs buckling
+        ctx.beginPath();
+        ctx.moveTo(x + 5, y + 15);
+        ctx.lineTo(x - 5, y + 28);
+        ctx.moveTo(x + 5, y + 15);
+        ctx.lineTo(x + 15, y + 28);
+        ctx.stroke();
+      }
+    }
+
+    return canvas.toDataURL();
+  }
+
+  createBossSpritesheet() {
+    // Boss (Kain) spritesheet - larger than regular enemies
+    const canvas = document.createElement('canvas');
+    canvas.width = 2048; // 16 frames, 128px each
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+
+    // Clear with transparent background
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw boss frames
+    for(let i = 0; i < 16; i++) {
+      const x = i * 128 + 64;
+      const y = 64;
+
+      // Head
+      ctx.fillStyle = '#6c3483';
+      ctx.beginPath();
+      ctx.arc(x, y - 40, 20, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Body with different poses
+      ctx.strokeStyle = '#8e44ad';
+      ctx.lineWidth = 6;
+
+      if (i < 4) { // Idle
+        const breathe = Math.sin(i * Math.PI/2) * 3;
+
+        // Torso
+        ctx.beginPath();
+        ctx.moveTo(x, y - 20);
+        ctx.lineTo(x, y + 30);
+        ctx.stroke();
+
+        // Arms
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 25, y + breathe);
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 25, y - breathe);
+        ctx.stroke();
+
+        // Legs
+        ctx.beginPath();
+        ctx.moveTo(x, y + 30);
+        ctx.lineTo(x - 20, y + 64);
+        ctx.moveTo(x, y + 30);
+        ctx.lineTo(x + 20, y + 64);
+        ctx.stroke();
+
+        // Aura (increases with frame)
+        ctx.fillStyle = `rgba(142, 68, 173, ${0.1 + i*0.05})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 50 + i*2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      else if (i >= 4 && i < 10) { // Attack
+        const attackPhase = i - 4;
+
+        // Torso
+        ctx.beginPath();
+        ctx.moveTo(x, y - 20);
+        ctx.lineTo(x, y + 30);
+        ctx.stroke();
+
+        // Arms - attacking
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        if (attackPhase < 3) {
+          // Wind up
+          ctx.lineTo(x - 30 + attackPhase * 5, y - 10);
+        } else {
+          // Strike
+          ctx.lineTo(x + 35, y);
+        }
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 15, y + 10);
+        ctx.stroke();
+
+        // Legs in stance
+        ctx.beginPath();
+        ctx.moveTo(x, y + 30);
+        ctx.lineTo(x - 25, y + 64);
+        ctx.moveTo(x, y + 30);
+        ctx.lineTo(x + 10, y + 64);
+        ctx.stroke();
+
+        // Attack effect
+        if (attackPhase >= 3) {
+          ctx.strokeStyle = '#e74c3c';
+          ctx.lineWidth = 10;
+          ctx.beginPath();
+          ctx.moveTo(x + 35, y);
+          ctx.lineTo(x + 60 + (attackPhase - 3) * 10, y);
+          ctx.stroke();
+        }
+      }
+      else { // Special attack (glowing injection sites)
+        const specialPhase = i - 10;
+
+        // Torso
+        ctx.beginPath();
+        ctx.moveTo(x, y - 20);
+        ctx.lineTo(x, y + 30);
+        ctx.stroke();
+
+        // Arms - raised for special
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 20, y - 20);
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 20, y - 20);
+        ctx.stroke();
+
+        // Legs in wide stance
+        ctx.beginPath();
+        ctx.moveTo(x, y + 30);
+        ctx.lineTo(x - 25, y + 64);
+        ctx.moveTo(x, y + 30);
+        ctx.lineTo(x + 25, y + 64);
+        ctx.stroke();
+
+        // Special attack visual effect
+        ctx.fillStyle = `rgba(231, 76, 60, ${0.3 + specialPhase * 0.15})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 40 + specialPhase * 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Energy points
+        ctx.fillStyle = '#e74c3c

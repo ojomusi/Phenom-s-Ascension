@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Phenom's Ascension</title>
+  <!-- Phaser 3 from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+  <style>
+    body { margin: 0; background: #000; }
+    canvas { display: block; margin: 0 auto; }
+  </style>
+</head>
+<body>
+<script>
+// GAME CONFIGURATION
+const config = {
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  backgroundColor: '#111', // dark background to highlight aura/particles
+  physics: {
+    default: 'arcade',
+    arcade: { gravity: { y: 500 }, debug: false }
+  },
+  scene: [BootScene, PreloadScene, MainMenuScene, LevelScene, GameOverScene]
+};
+
+const game = new Phaser.Game(config);
+
+// BOOT SCENE: Initialize the game and transition to asset loading.
+class BootScene extends Phaser.Scene {
+  constructor() { super('BootScene'); }
+  preload() {
+    // Optionally show a loading bar here.
+  }
+  create() {
+    this.scene.start('PreloadScene');
+  }
+}
+
+// PRELOAD SCENE: Load all assets (sprites, backgrounds, particle images, etc.)
+class PreloadScene extends Phaser.Scene {
+  constructor() { super('PreloadScene'); }
+  preload() {
+    // Load background images (you can use different ones per level)
+    this.load.image('bg_level1', 'assets/bg_level1.png'); // e.g., Hunter Association HQ
+    this.load.image('bg_level2', 'assets/bg_level2.png'); // warehouse/training
+    this.load.image('bg_level3', 'assets/bg_level3.png'); // dungeon/temple
+    this.load.image('bg_level4', 'assets/bg_level4.png'); // urban chase
+    this.load.image('bg_level5', 'assets/bg_level5.png'); // fortress assault
+
+    // Load spritesheets for characters (all art should be of a consistent style)
+    this.load.spritesheet('joel', 'assets/joel.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('dante', 'assets/dante.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('enemy', 'assets/enemy.png', { frameWidth: 64, frameHeight: 64 });
+    // Load additional character assets (Naomi, etc.) as needed
+
+    // Load assets for particle effects (for hit sparks, aura glows, etc.)
+    this.load.image('spark', 'assets/spark.png');
+    // …and any audio files
+
+    // Preload text fonts or other UI assets if needed.
+  }
+  create() {
+    this.scene.start('MainMenuScene');
+  }
+}
+
+// MAIN MENU SCENE: Show the game title and introductory text from the story.
+class MainMenuScene extends Phaser.Scene {
+  constructor() { super('MainMenuScene'); }
+  create() {
+    // Display game title using a large font and story-themed colors.
+    this.add.text(400, 100, "Phenom's Ascension", { fontSize: '48px', fill: '#e74c3c' }).setOrigin(0.5);
+    // Introductory narrative text (excerpts from the story).
+    const introText = 
+      "Joel, a 22-year-old Hunter from New York, has just received his Hunter License.\n" +
+      "His journey begins at the Hunter Association Headquarters...\n\n" +
+      "Press SPACE to start your ascension.";
+    this.add.text(400, 300, introText, { fontSize: '20px', fill: '#ecf0f1', align: 'center' }).setOrigin(0.5);
+    
+    // Start the first level on SPACE key press.
+    this.input.keyboard.on('keydown-SPACE', () => {
+      this.scene.start('LevelScene', { level: 1, lives: 3, score: 0 });
+    });
+  }
+}
+
+// LEVEL SCENE: This scene represents the main gameplay. It adapts based on the chapter/level.
+class LevelScene extends Phaser.Scene {
+  constructor() { super('LevelScene'); }
+  init(data) {
+    this.level = data.level;
+    this.lives = data.lives;
+    this.score = data.score;
+  }
+  create() {
+    // Select background based on level (each level reflects a chapter from the story).
+    let bgKey = 'bg_level1';
+    let chapterText = "";
+    switch(this.level) {
+      case 1:
+        bgKey = 'bg_level1';
+        chapterText = "Chapter 1: The Hunter Association\nJoel seeks guidance for his destiny.";
+        break;
+      case 2:
+        bgKey = 'bg_level2';
+        chapterText = "Chapter 2: The Warehouse Training\nJoel faces Dante's tests of speed, precision, and stealth.";
+        break;
+      case 3:
+        bgKey = 'bg_level3';
+        chapterText = "Chapter 3: The Dungeon\nA treacherous descent into a maze of regenerating foes.";
+        break;
+      case 4:
+        bgKey = 'bg_level4';
+        chapterText = "Chapter 4: The Chase and Infiltration\nFollowing clues to rescue a crucial ally.";
+        break;
+      case 5:
+        bgKey = 'bg_level5';
+        chapterText = "Chapter 5: The Final Assault\nConfronting corruption at Kain's fortress.";
+        break;
+      default:
+        chapterText = "Final Chapter: The Legend Lives On";
+    }
+    this.add.image(400, 300, bgKey);
+    
+    // Display chapter narrative text at the beginning of the level.
+    let textBox = this.add.rectangle(400, 50, 760, 80, 0x000000, 0.6);
+    this.add.text(400, 50, chapterText, { fontSize: '18px', fill: '#ffffff', align: 'center', wordWrap: { width: 740 } }).setOrigin(0.5);
+
+    // Create the player (using the sprite based on Joel)
+    this.player = this.physics.add.sprite(100, 500, 'joel');
+    this.player.setCollideWorldBounds(true);
+
+    // Set up player animations here (idle, run, attack) for a fluid beat‑em‑up style.
+    // (Define animations using this.anims.create({...}) for 'joel_walk', 'joel_attack', etc.)
+
+    // Create enemy group – they represent various foes from the story.
+    this.enemies = this.physics.add.group();
+
+    // Lives and score UI
+    this.livesText = this.add.text(16, 16, 'Lives: ' + this.lives, { fontSize: '20px', fill: '#ffffff' });
+    this.scoreText = this.add.text(16, 40, 'Score: ' + this.score, { fontSize: '20px', fill: '#ffffff' });
+
+    // Set up particle emitter for hit effects and aura glows.
+    this.particles = this.add.particles('spark');
+    this.emitter = this.particles.createEmitter({
+      speed: 100,
+      scale: { start: 0.5, end: 0 },
+      blendMode: 'ADD'
+    });
+
+    // Input controls (keyboard arrows for movement, additional keys for attacks)
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.attackKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    // Timer event for enemy spawning (scales with level/chapter)
+    this.time.addEvent({ delay: 2000, callback: this.spawnEnemy, callbackScope: this, loop: true });
+    
+    // Set up collisions between player and enemies
+    this.physics.add.overlap(this.player, this.enemies, this.handlePlayerHit, null, this);
+  }
+  update() {
+    // Basic movement controls for left/right and jump (sidescrolling/vertical scrolling hybrid)
+    if (this.cursors.left.isDown) {
+      this.player.setVelocityX(-160);
+      // play left movement animation
+    } else if (this.cursors.right.isDown) {
+      this.player.setVelocityX(160);
+      // play right movement animation
+    } else {
+      this.player.setVelocityX(0);
+      // play idle animation
+    }
+    if (this.cursors.up.isDown && this.player.body.touching.down) {
+      this.player.setVelocityY(-350);
+    }
+    
+    // Handle attack input
+    if (Phaser.Input.Keyboard.JustDown(this.attackKey)) {
+      // Execute an attack: detect enemies in range, add particle burst effects, update score
+      this.enemies.getChildren().forEach(enemy => {
+        if (Phaser.Math.Distance.Between(this.player.x, this.player.y, enemy.x, enemy.y) < 70) {
+          enemy.destroy();
+          this.score += 100;  // Increase score for defeating an enemy
+          this.scoreText.setText('Score: ' + this.score);
+          // Create a burst of particles at the enemy’s position
+          this.emitter.explode(20, enemy.x, enemy.y);
+        }
+      });
+    }
+    
+    // Example: if player moves past an enemy (or if enemy exits screen) add to score.
+    this.enemies.getChildren().forEach(enemy => {
+      if (enemy.x < -50) {
+        enemy.destroy();
+        this.score += 50;
+        this.scoreText.setText('Score: ' + this.score);
+      }
+    });
+    
+    // Level complete condition (for demonstration, after score reaches a threshold)
+    if(this.score >= (this.level * 1000)) {
+      // Transition to next level or ending if last level
+      let nextLevel = this.level + 1;
+      if(nextLevel > 5) {
+        this.scene.start('GameOverScene', { score: this.score });
+      } else {
+        this.scene.start('LevelScene', { level: nextLevel, lives: this.lives, score: this.score });
+      }
+    }
+  }
+  spawnEnemy() {
+    // Spawn an enemy from the right side at a random vertical position.
+    let enemy = this.enemies.create(850, Phaser.Math.Between(100, 550), 'enemy');
+    enemy.setVelocityX(-100 - (this.level * 10));  // increase speed with level
+    // You can add animations and special effects here.
+  }
+  handlePlayerHit(player, enemy) {
+    // When the player collides with an enemy, deduct a life and apply an aura particle effect.
+    enemy.destroy();
+    this.lives--;
+    this.livesText.setText('Lives: ' + this.lives);
+    this.emitter.explode(30, player.x, player.y);
+    
+    if (this.lives <= 0) {
+      // Transition to game over if no lives remain.
+      this.scene.start('GameOverScene', { score: this.score });
+    }
+  }
+}
+
+// GAME OVER SCENE: Display final narrative text (using story epilogue) and final stats.
+class GameOverScene extends Phaser.Scene {
+  constructor() { super('GameOverScene'); }
+  init(data) {
+    this.score = data.score;
+  }
+  create() {
+    let endText =
+      "Game Over\n\n" +
+      "As Joel became a legend—the one who ended an empire and burned a corrupt system to the ground—\n" +
+      "his journey lived on in every whispered tale of the Hunter world.\n\n" +
+      "Final Score: " + this.score + "\n\n" +
+      "Press SPACE to Restart";
+    this.add.text(400, 300, endText, { fontSize: '24px', fill: '#ecf0f1', align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5);
+    this.input.keyboard.on('keydown-SPACE', () => {
+      this.scene.start('MainMenuScene');
+    });
+  }
+}
+</script>
+</body>
+</html>

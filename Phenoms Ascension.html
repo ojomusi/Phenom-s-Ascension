@@ -1,0 +1,1918 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phenom's Ascension</title>
+  <!-- Phaser 3 from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Arial', sans-serif;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      border: 2px solid #333;
+      box-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
+    }
+
+    #loading {
+      color: white;
+      font-size: 24px;
+      position: absolute;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="loading">Loading Phenom's Ascension...</div>
+  <script>
+    // GAME CONFIGURATION
+    const config = {
+      type: Phaser.AUTO,
+      width: 800,
+      height: 600,
+      backgroundColor: '#111',
+      physics: {
+        default: 'arcade',
+        arcade: {
+          gravity: { y: 500 },
+          debug: false
+        }
+      },
+      scene: [],
+      pixelArt: true
+    };
+
+
+    // GAME STATE MANAGEMENT
+    const GAME_STATE = {
+      playerStats: {
+        agility: 1,
+        endurance: 1,
+        respect: 0,
+        mentalFortitude: 1,
+        archerySkill: 1,
+        stealth: 1,
+        reflexes: 1,
+        dodgeReflex: 1,
+        precision: 1,
+        toughness: 1
+      },
+      maxStats: 5
+    };
+
+    // BOOT SCENE: Initialize the game and transition to asset loading.
+    class BootScene extends Phaser.Scene {
+      constructor() {
+        super('BootScene');
+      }
+
+      preload() {
+
+
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
+        const loadingText = this.make.text({
+          x: width / 2,
+          y: height / 2 - 50,
+          text: 'Loading...',
+          style: {
+            font: '20px monospace',
+            fill: '#ffffff'
+          }
+        });
+        loadingText.setOrigin(0.5, 0.5);
+
+
+      }
+
+      create() {
+        this.scene.start('PreloadScene');
+      }
+    }
+
+    // PRELOAD SCENE: Load all assets (sprites, backgrounds, particle images, etc.)
+    class PreloadScene extends Phaser.Scene {
+      constructor() {
+        super('PreloadScene');
+      }
+
+      preload() {
+        // Create a loading bar
+        const progressBar = this.add.graphics();
+        const progressBox = this.add.graphics();
+        progressBox.fillStyle(0x222222, 0.8);
+        progressBox.fillRect(240, 270, 320, 50);
+
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
+        const loadingText = this.make.text({
+          x: width / 2,
+          y: height / 2 - 50,
+          text: 'Loading...',
+          style: {
+            font: '20px monospace',
+            fill: '#ffffff'
+          }
+        });
+        loadingText.setOrigin(0.5, 0.5);
+
+        this.load.on('progress', function (value) {
+          progressBar.clear();
+          progressBar.fillStyle(0xe74c3c, 1);
+          progressBar.fillRect(250, 280, 300 * value, 30);
+          console.log('Loading progress: ' + Math.round(value * 100) + '%');
+        });
+
+        this.load.on('complete', function () {
+          console.log('All assets loaded!');
+          progressBar.destroy();
+          progressBox.destroy();
+          loadingText.destroy();
+          document.getElementById('loading').style.display = 'none';
+        });
+
+        // Load background images
+        this.load.image('bg_level1', 'assets/images/backgrounds/bg_level1.png');
+        this.load.image('bg_level2', 'assets/images/backgrounds/bg_level2.png');
+        this.load.image('bg_level3', 'assets/images/backgrounds/bg_level3.png');
+        this.load.image('bg_level4', 'assets/images/backgrounds/bg_level4.png');
+        this.load.image('bg_level5', 'assets/images/backgrounds/bg_level5.png');
+
+        // Load spritesheets
+        this.load.spritesheet('joel', 'assets/images/sprites/joel.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.spritesheet('dante', 'assets/images/sprites/dante.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.spritesheet('enemy', 'assets/images/sprites/enemy.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.spritesheet('boss', 'assets/images/sprites/boss.png', { frameWidth: 128, frameHeight: 128 });
+        this.load.spritesheet('naomi', 'assets/images/sprites/naomi.png', { frameWidth: 64, frameHeight: 64 });
+
+        // Load particle effects and projectiles
+        this.load.image('spark', 'assets/images/effects/spark.png');
+        this.load.image('arrow', 'assets/images/effects/arrow.png');
+
+        // Load UI elements
+        this.load.image('button', 'assets/images/ui/button.png');
+
+        // Audio is commented out as requested
+        // this.load.audio('theme', ['assets/audio/theme.mp3']);
+        // this.load.audio('hit', ['assets/audio/hit.mp3']);
+        // this.load.audio('shoot', ['assets/audio/shoot.mp3']);
+        // this.load.audio('levelup', ['assets/audio/levelup.mp3']);
+      }
+
+
+      create() {
+        // Debug check
+        console.log("Available joel frames:", this.textures.get('joel').getFrameNames());
+
+        // Create animations for Joel
+        this.anims.create({
+          key: 'joel_idle',
+          frames: this.anims.generateFrameNumbers('joel', { start: 0, end: 3 }),
+          frameRate: 8,
+          repeat: -1
+        });
+
+
+        this.anims.create({
+          key: 'joel_run',
+          frames: this.anims.generateFrameNumbers('joel', { start: 4, end: 11 }),
+          frameRate: 12,
+          repeat: -1
+        });
+
+        this.anims.create({
+          key: 'joel_attack',
+          frames: this.anims.generateFrameNumbers('joel', { start: 12, end: 15 }),
+          frameRate: 15,
+          repeat: 0
+        });
+
+        this.anims.create({
+          key: 'joel_shoot',
+          frames: this.anims.generateFrameNumbers('joel', { start: 16, end: 19 }),
+          frameRate: 15,
+          repeat: 0
+        });
+
+        this.anims.create({
+          key: 'joel_hurt',
+          frames: this.anims.generateFrameNumbers('joel', { start: 20, end: 22 }),
+          frameRate: 8,
+          repeat: 0
+        });
+
+        // Create animations for enemies
+        this.anims.create({
+          key: 'enemy_walk',
+          frames: this.anims.generateFrameNumbers('enemy', { start: 0, end: 7 }),
+          frameRate: 10,
+          repeat: -1
+        });
+
+        this.anims.create({
+          key: 'enemy_attack',
+          frames: this.anims.generateFrameNumbers('enemy', { start: 8, end: 11 }),
+          frameRate: 10,
+          repeat: 0
+        });
+
+        this.anims.create({
+          key: 'enemy_hurt',
+          frames: this.anims.generateFrameNumbers('enemy', { start: 12, end: 14 }),
+          frameRate: 8,
+          repeat: 0
+        });
+
+        // Create animations for boss (Kain)
+        this.anims.create({
+          key: 'boss_idle',
+          frames: this.anims.generateFrameNumbers('boss', { start: 0, end: 3 }),
+          frameRate: 8,
+          repeat: -1
+        });
+
+        this.anims.create({
+          key: 'boss_attack',
+          frames: this.anims.generateFrameNumbers('boss', { start: 4, end: 9 }),
+          frameRate: 12,
+          repeat: 0
+        });
+
+        this.anims.create({
+          key: 'boss_special',
+          frames: this.anims.generateFrameNumbers('boss', { start: 10, end: 15 }),
+          frameRate: 10,
+          repeat: 0
+        });
+
+        // Start the main menu
+        this.scene.start('MainMenuScene');
+
+
+      }
+    }
+
+    // MAIN MENU SCENE: Show the game title and introductory text from the story.
+    class MainMenuScene extends Phaser.Scene {
+      constructor() {
+        super('MainMenuScene');
+      }
+
+      create() {
+        // Play theme music
+        this.theme = {
+          play: function () { },
+          stop: function () { }
+        };
+
+
+        // Display a background
+        this.add.image(400, 300, 'bg_level1');
+
+        // Add overlay for better text readability
+        const overlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.6);
+
+        // Create red particle effect for title
+        this.particles = this.add.particles('spark');
+        this.emitter = this.particles.createEmitter({
+          x: 400,
+          y: 100,
+          speed: { min: 20, max: 100 },
+          angle: { min: 0, max: 360 },
+          scale: { start: 0.2, end: 0 },
+          blendMode: 'ADD',
+          lifespan: 1000,
+          frequency: 50
+        });
+
+        // Display game title with a glowing effect
+        const title = this.add.text(400, 100, "PHENOM'S ASCENSION", {
+          fontSize: '48px',
+          fontFamily: 'Arial, sans-serif',
+          fontWeight: 'bold',
+          fill: '#e74c3c',
+          stroke: '#c0392b',
+          strokeThickness: 6
+        }).setOrigin(0.5);
+
+        // Add subtitle
+        this.add.text(400, 160, "The Legend of Joel", {
+          fontSize: '24px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#ecf0f1'
+        }).setOrigin(0.5);
+        // ADD THESE LINES - Controls instructions
+        const controlsText =
+          "CONTROLS:\n" +
+          "Arrow Keys: Move and Jump\n" +
+          "Z: Melee Attack\n" +
+          "X: Shoot Arrow\n" +
+          "Space: Skip Text / Continue";
+
+        this.add.text(655, 530, controlsText, {
+          fontSize: '16px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#f39c12',
+          align: 'center',
+          lineSpacing: 6
+        }).setOrigin(0.5);
+
+        // Introductory narrative text from the story
+        const introText =
+          "Joel, a 22-year-old Hunter from New York, has just received his Hunter License.\n\n" +
+          "In a world where dungeons spawn and monsters prowl, Hunters risk everything for power and glory.\n\n" +
+          "But Joel's journey will unveil corruption at the heart of the Hunter Association itself.\n\n" +
+          "Begin your journey at the Hunter Association Headquarters...";
+
+        this.add.text(400, 350, introText, {
+          fontSize: '18px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#ecf0f1',
+          align: 'center',
+          lineSpacing: 10,
+          wordWrap: { width: 700 }
+        }).setOrigin(0.5);
+
+        // Create start button with animation
+        const startButton = this.add.image(400, 520, 'button');
+        const startText = this.add.text(400, 520, "START GAME", {
+          fontSize: '24px',
+          fontFamily: 'Arial, sans-serif',
+          fontWeight: 'bold',
+          fill: '#ffffff'
+        }).setOrigin(0.5);
+
+        // Make button interactive
+        startButton.setInteractive({ useHandCursor: true })
+          .on('pointerover', () => {
+            startButton.setScale(1.05);
+            startText.setScale(1.05);
+          })
+          .on('pointerout', () => {
+            startButton.setScale(1);
+            startText.setScale(1);
+          })
+          .on('pointerdown', () => {
+            // Flash effect
+            this.cameras.main.flash(500, 255, 255, 255);
+            // Play level-up sound
+            // Audio disabled
+            // this.sound.play('levelup');
+
+            // Stop music and transition after a short delay
+            this.time.delayedCall(700, () => {
+              this.theme.stop();
+              this.scene.start('StoryScene', { level: 1, lives: 999, score: 0 }); // Debug
+              // Real this.scene.start('StoryScene', { level: 1, lives: 3, score: 0 });
+            });
+          });
+
+        // Add keyboard control
+        this.input.keyboard.on('keydown-SPACE', () => {
+          this.theme.stop();
+          this.scene.start('StoryScene', { level: 1, lives: 999, score: 0 }); // Debug
+          // this.scene.start('StoryScene', { level: 1, lives: 3, score: 0 }); // Real
+        });
+
+        // Add small credit at bottom
+        this.add.text(400, 580, "Based on Joel's journey in Phenom's Ascension", {
+          fontSize: '12px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#95a5a6'
+        }).setOrigin(0.5);
+
+
+      }
+    }
+
+    // STORY SCENE: Shows narrative text between levels
+    class StoryScene extends Phaser.Scene {
+      constructor() {
+        super('StoryScene');
+      }
+
+      init(data) {
+        this.level = data.level;
+        this.lives = data.lives;
+        this.score = data.score;
+      }
+
+      create() {
+        // Select background based on level
+        this.add.image(400, 300, `bg_level${this.level}`);
+
+
+        // Add transparent overlay
+        this.add.rectangle(400, 300, 800, 600, 0x000000, 0.7);
+
+        // Story text based on level
+        let storyTitle = "";
+        let storyText = "";
+
+        switch (this.level) {
+          case 1:
+            storyTitle = "The Hunter Association";
+            storyText = "As a new Rogue-class Hunter, Joel seeks guidance at the Hunter Association Headquarters in New York. After some investigation, he discovers a mysterious ex-S-Rank Hunter named Dante Cross who disappeared after a raid gone wrong.\n\nArmed with information about Dante's past, Joel heads to an abandoned warehouse in Brooklyn where Dante has been hiding. To prove himself worthy of training, Joel must land a hit on the legendary Hunter...";
+            break;
+          case 2:
+            storyTitle = "The Training Ground";
+            storyText = "Having proven his potential, Joel begins training with Dante. Three tests await him: the Test of Speed, the Test of Precision, and the Test of Stealth.\n\nAs Joel pushes himself to the limit, his abilities grow. But Dante remains haunted by his past - the only survivor of a team lost to a mysterious dungeon.\n\nAnd now, a D-Rank Dungeon has appeared nearby...";
+            break;
+          case 3:
+            storyTitle = "The Corrupted Dungeon";
+            storyText = "Joel and Dante discover that the dungeon is not what it seems. The Hunter Association is hiding the truth - this dungeon's mana levels are unstable, potentially lethal to unprepared Hunters.\n\nInside, they find twisted creatures that regenerate when struck. Their only hope is to find the source of the corruption - a black crystal pulsing with dark energy at the dungeon's heart.\n\nDestroying it may be their only chance of escape...";
+            break;
+          case 4:
+            storyTitle = "The Chase for Truth";
+            storyText = "After escaping the dungeon, Joel learns that the analyst who warned him, Naomi Hayes, has been silenced by the Hunter Association. With Dante's help, he infiltrates her apartment, rescuing her from Association agents.\n\nThey discover PROJECT ECHO - a conspiracy led by Director Elias Kain who is creating fake dungeons and experimenting on Hunters. Even worse, Kain has revived Vincent Graves, a Hunter long thought dead.\n\nJoel must gather allies and evidence before Kain's next move...";
+            break;
+          case 5:
+            storyTitle = "The Final Confrontation";
+            storyText = "With allies from the Iron Fangs, rescued experiments, and the exposure of PROJECT NOX, Joel brings the fight to Kain's private fortress.\n\nSurrounding the compound with forces, Joel's team disables the defenses and breaches Kain's command center. But Kain has one final card to play - injecting himself with his own experimental enhancement.\n\nJoel must exploit Kain's weaknesses, targeting the unstable injection sites to end his reign once and for all...";
+            break;
+          default:
+            storyTitle = "Epilogue";
+            storyText = "One year after Kain's defeat, the Hunter Association has been dismantled. A new system rises from its ashes, with Joel at its center.\n\nNaomi leads the new Hunter Network, Dante trains the next generation of Hunters, Mira runs a sanctuary for those harmed by the old system, and the Iron Fangs ensure no one like Kain rises again.\n\nAs for Joel, he has become a legend - the one who brought down an empire and rebuilt a world.";
+        }
+
+        // Display title with red energy effect
+        const titleText = this.add.text(400, 100, storyTitle, {
+          fontSize: '36px',
+          fontFamily: 'Arial, sans-serif',
+          fontWeight: 'bold',
+          fill: '#e74c3c',
+          stroke: '#000000',
+          strokeThickness: 4
+        }).setOrigin(0.5);
+
+        // Add particle effect to title
+        this.particles = this.add.particles('spark');
+        this.emitter = this.particles.createEmitter({
+          x: 400,
+          y: 100,
+          speed: { min: 10, max: 50 },
+          angle: { min: 0, max: 360 },
+          scale: { start: 0.1, end: 0 },
+          blendMode: 'ADD',
+          lifespan: 1000,
+          frequency: 100
+        });
+
+        // Narrative text with typewriter effect
+        const narrativeText = this.add.text(400, 300, "", {
+          fontSize: '18px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#ffffff',
+          align: 'center',
+          lineSpacing: 10,
+          wordWrap: { width: 700 }
+        }).setOrigin(0.5, 0);
+
+        // Stats display based on level
+        const statsText = this.add.text(400, 500, "", {
+          fontSize: '16px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#f39c12',
+          align: 'center'
+        }).setOrigin(0.5);
+
+        // Show appropriate stats for level
+        switch (this.level) {
+          case 1:
+            break; // No stats yet
+          case 2:
+            statsText.setText("[+1 AGILITY] [+1 ENDURANCE]\n[+1 RESPECT from Dante] [+1 MENTAL FORTITUDE]");
+            break;
+          case 3:
+            statsText.setText("[+1 DODGE REFLEX] [+1 RESPECT from Dante]\n[+1 ARCHERY SKILL] [+1 STEALTH] [+1 REFLEXES]");
+            break;
+          case 4:
+            statsText.setText("[+2 RESPECT FROM DANTE] [+2 AGILITY]\n[+1 PRECISION] [+1 TOUGHNESS]");
+            break;
+          case 5:
+            statsText.setText("[+1 STEALTH] [+1 TACTICAL PLANNING]\n[+1 INTERROGATION] [+1 LEADERSHIP]");
+            break;
+          default:
+            statsText.setText("[+1 COMBAT ANALYSIS] [+1 ADAPTABILITY]\n[FINAL COMBAT MASTERY UNLOCKED]");
+        }
+
+        // "Continue" button (appears after text is fully displayed)
+        const continueButton = this.add.image(400, 550, 'button').setVisible(false);
+        const continueText = this.add.text(400, 550, "CONTINUE", {
+          fontSize: '24px',
+          fontFamily: 'Arial, sans-serif',
+          fontWeight: 'bold',
+          fill: '#ffffff'
+        }).setOrigin(0.5).setVisible(false);
+
+        // Make button interactive
+        continueButton.setInteractive({ useHandCursor: true })
+          .on('pointerover', () => {
+            continueButton.setScale(1.05);
+            continueText.setScale(1.05);
+          })
+          .on('pointerout', () => {
+            continueButton.setScale(1);
+            continueText.setScale(1);
+          })
+          .on('pointerdown', () => {
+            // Transition to game level or ending
+            if (this.level <= 5) {
+              this.scene.start('LevelScene', {
+                level: this.level,
+                lives: this.lives,
+                score: this.score
+              });
+            } else {
+              this.scene.start('GameOverScene', { score: this.score });
+            }
+          });
+
+        // Typewriter effect
+        let currentChar = 0;
+        const delay = 30; // ms per character
+
+        this.textTimer = this.time.addEvent({
+          delay: delay,
+          callback: () => {
+            narrativeText.text += storyText[currentChar];
+            currentChar++;
+            if (currentChar === storyText.length) {
+              this.textTimer.remove();
+              continueButton.setVisible(true);
+              continueText.setVisible(true);
+            }
+          },
+          callbackScope: this,
+          repeat: storyText.length - 1
+        });
+
+        // Skip button or key to fast-forward text
+        this.input.keyboard.on('keydown-SPACE', () => {
+          if (currentChar < storyText.length) {
+            // Complete the text immediately
+            this.textTimer.remove();
+            narrativeText.text = storyText;
+            currentChar = storyText.length;
+            continueButton.setVisible(true);
+            continueText.setVisible(true);
+          } else {
+            // Move to next scene
+            if (this.level <= 5) {
+              this.scene.start('LevelScene', {
+                level: this.level,
+                lives: this.lives,
+                score: this.score
+              });
+            } else {
+              this.scene.start('GameOverScene', { score: this.score });
+            }
+          }
+        });
+
+
+      }
+    }
+
+    // LEVEL SCENE: This scene represents the main gameplay. It adapts based on the chapter/level.
+    class LevelScene extends Phaser.Scene {
+      constructor() {
+        super('LevelScene');
+      }
+
+      init(data) {
+        this.level = data.level;
+        this.lives = data.lives;
+        this.score = data.score;
+        this.enemies = null;
+        this.arrows = null;
+        this.statPoints = 0;
+        this.levelComplete = false;
+        this.bossDefeated = false;
+      }
+
+      create() {
+        // Select background based on level
+        this.add.image(400, 300, `bg_level${this.level}`);
+
+
+        // Create platforms (ground and ledges)
+        this.platforms = this.physics.add.staticGroup();
+        this.platforms.create(400, 600, 'button').setScale(8, 1).refreshBody(); // Ground
+
+        // Add different platform layouts based on level
+        switch (this.level) {
+          case 1: // Hunter Association HQ
+            this.platforms.create(200, 450, 'button').setScale(2, 0.5).refreshBody();
+            this.platforms.create(600, 350, 'button').setScale(2, 0.5).refreshBody();
+            this.platforms.create(400, 250, 'button').setScale(1.5, 0.5).refreshBody();
+            break;
+          case 2: // Warehouse training
+            this.platforms.create(150, 400, 'button').setScale(1, 0.5).refreshBody();
+            this.platforms.create(350, 350, 'button').setScale(1, 0.5).refreshBody();
+            this.platforms.create(550, 400, 'button').setScale(1, 0.5).refreshBody();
+            this.platforms.create(700, 250, 'button').setScale(1, 0.5).refreshBody();
+            break;
+          case 3: // Dungeon/Temple
+            this.platforms.create(200, 500, 'button').setScale(1.5, 0.5).refreshBody();
+            this.platforms.create(500, 400, 'button').setScale(1.5, 0.5).refreshBody();
+            this.platforms.create(250, 300, 'button').setScale(1.5, 0.5).refreshBody();
+            this.platforms.create(600, 210, 'button').setScale(1.5, 0.5).refreshBody();
+            break;
+          case 4: // Urban chase
+            this.platforms.create(250, 500, 'button').setScale(1, 0.5).refreshBody();
+            this.platforms.create(450, 450, 'button').setScale(1, 0.5).refreshBody();
+            this.platforms.create(650, 400, 'button').setScale(1, 0.5).refreshBody();
+            this.platforms.create(450, 290, 'button').setScale(1, 0.5).refreshBody();
+            this.platforms.create(250, 220, 'button').setScale(1, 0.5).refreshBody();
+            break;
+          case 5: // Fortress assault
+            this.platforms.create(600, 500, 'button').setScale(2, 0.5).refreshBody();
+            this.platforms.create(400, 400, 'button').setScale(2, 0.5).refreshBody();
+            this.platforms.create(200, 300, 'button').setScale(2, 0.5).refreshBody();
+            this.platforms.create(400, 200, 'button').setScale(2, 0.5).refreshBody();
+            this.platforms.create(600, 320, 'button').setScale(0.5, 0.5).refreshBody();
+            break;
+        }
+
+        // Create player
+        this.player = this.physics.add.sprite(100, 450, 'joel');
+        this.player.setCollideWorldBounds(true);
+        this.player.setBounce(0.1);
+
+        // Set properties based on level progress
+        this.player.attackPower = 10 + (this.level * 5);
+        this.player.health = this.lives;
+        this.player.isAttacking = false;
+        this.player.canShoot = true;
+        this.player.onCooldown = false;
+
+        // Create enemy groups
+        this.enemies = this.physics.add.group({
+          collideWorldBounds: true,
+          bounceX: 0.1
+        });
+
+        // Create projectile group for arrows
+        this.arrows = this.physics.add.group();
+
+        // Boss appears in level 5
+        if (this.level === 5) {
+          this.boss = this.physics.add.sprite(650, 100, 'boss');
+          this.boss.setCollideWorldBounds(true);
+          this.boss.health = 100; // Boss has more health
+          this.boss.isAttacking = false;
+          this.boss.attackCooldown = false;
+          this.boss.vulnerable = false; // Boss starts invulnerable
+          this.boss.phase = 1;
+
+          // Start idle animation
+          this.boss.anims.play('boss_idle', true);
+
+          // Boss collides with platforms
+          this.physics.add.collider(this.boss, this.platforms);
+        }
+
+        // Colliders
+        this.physics.add.collider(this.player, this.platforms);
+        this.physics.add.collider(this.enemies, this.platforms);
+        this.physics.add.collider(this.arrows, this.platforms, this.arrowHitPlatform, null, this);
+
+        // Overlap handlers
+        this.physics.add.overlap(this.player, this.enemies, this.handleEnemyCollision, null, this);
+        this.physics.add.overlap(this.arrows, this.enemies, this.arrowHitEnemy, null, this);
+
+        if (this.level === 5) {
+          this.physics.add.overlap(this.arrows, this.boss, this.arrowHitBoss, null, this);
+          this.physics.add.overlap(this.player, this.boss, this.handleBossCollision, null, this);
+        }
+
+        // Set up particle emitter for hit effects
+        this.particles = this.add.particles('spark');
+        this.hitEmitter = this.particles.createEmitter({
+          speed: { min: 50, max: 200 },
+          scale: { start: 0.4, end: 0 },
+          blendMode: 'ADD',
+          lifespan: 500,
+          on: false
+        });
+
+        // Input controls
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.attackKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+        this.shootKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
+
+        // Level-based stats display
+        let statsText = "";
+        switch (this.level) {
+          case 1: statsText = "LEVEL 1: Hunter Association\nAGILITY: 1 | ENDURANCE: 1 | STEALTH: 1"; break;
+          case 2: statsText = "LEVEL 2: Warehouse Training\nAGILITY: 2 | ENDURANCE: 2 | REFLEXES: 1"; break;
+          case 3: statsText = "LEVEL 3: The Dungeon\nDODGE: 2 | ARCHERY: 2 | STEALTH: 2"; break;
+          case 4: statsText = "LEVEL 4: The Chase\nAGILITY: 4 | PRECISION: 2 | TOUGHNESS: 2"; break;
+          case 5: statsText = "LEVEL 5: The Final Battle\nTACTICAL: 3 | LEADERSHIP: 3 | COMBAT: 4"; break;
+        }
+
+
+        // Set up UI
+        this.livesText = this.add.text(16, 16, 'Lives: ' + this.lives, {
+          fontSize: '18px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#ffffff'
+        });
+        this.scoreText = this.add.text(16, 40, 'Score: ' + this.score, {
+          fontSize: '18px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#ffffff'
+        });
+        // ADD THESE LINES - Controls reminder
+        this.controlsText = this.add.text(16, 580, "← → : Move   ↑ : Jump   Z: Attack   X: Shoot", {
+          fontSize: '12px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#cccccc',
+          backgroundColor: 'rgba(0,0,0,0.3)',
+          padding: { x: 5, y: 3 }
+        });
+        this.statsDisplay = this.add.text(400, 20, statsText, {
+          fontSize: '14px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#f39c12',
+          align: 'center'
+        }).setOrigin(0.5, 0);
+
+        // Level objective text
+        let objectiveText = "";
+        switch (this.level) {
+          case 1: objectiveText = "Objective: Gather information (Defeat 10 Association agents)"; break;
+          case 2: objectiveText = "Objective: Complete Dante's training tests (Reach 2000 points)"; break;
+          case 3: objectiveText = "Objective: Find and destroy the dungeon's power source"; break;
+          case 4: objectiveText = "Objective: Rescue Naomi and escape the Association"; break;
+          case 5: objectiveText = "Objective: Defeat Kain and end the corruption"; break;
+        }
+
+        this.objectiveText = this.add.text(400, 50, objectiveText, {
+          fontSize: '16px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#e74c3c',
+          stroke: '#000000',
+          strokeThickness: 2,
+          align: 'center'
+        }).setOrigin(0.5, 0);
+
+        // Boss health bar (only in level 5)
+        if (this.level === 5) {
+          this.bossHealthBar = this.add.graphics();
+          this.bossHealthBar.fillStyle(0xe74c3c, 1);
+          this.bossHealthBar.fillRect(300, 80, 200, 20);
+          this.add.text(400, 80, "KAIN", {
+            fontSize: '16px',
+            fontFamily: 'Arial, sans-serif',
+            fill: '#ffffff',
+            align: 'center'
+          }).setOrigin(0.5, 0);
+        }
+
+        // Timer event for enemy spawning
+        this.time.addEvent({
+          delay: 2000 / this.level, // Spawn faster at higher levels
+          callback: this.spawnEnemy,
+          callbackScope: this,
+          loop: true
+        });
+
+        // Enemy counter (for win condition)
+        this.enemiesDefeated = 0;
+        this.winScore = 1000 * this.level;
+
+        // If it's level 3 (dungeon), add a crystal objective
+        if (this.level === 3) {
+          this.crystal = this.physics.add.sprite(650, 150, 'boss');
+          this.crystal.setScale(0.5);
+          this.crystal.health = 50;
+
+          // Make it pulse
+          this.tweens.add({
+            targets: this.crystal,
+            scaleX: 0.6,
+            scaleY: 0.6,
+            duration: 800,
+            yoyo: true,
+            repeat: -1
+          });
+
+          // Collision with player's arrows
+          this.physics.add.overlap(this.arrows, this.crystal, this.arrowHitCrystal, null, this);
+
+          // Collision with platforms
+          this.physics.add.collider(this.crystal, this.platforms);
+        }
+
+        // If it's level 4 (rescue), add Naomi as an objective
+        if (this.level === 4) {
+          this.naomi = this.physics.add.sprite(700, 100, 'naomi');
+          this.naomi.setCollideWorldBounds(true);
+          this.naomi.rescued = false;
+
+          // Collision with platforms
+          this.physics.add.collider(this.naomi, this.platforms);
+
+          // Collision with player to rescue
+          this.physics.add.overlap(this.player, this.naomi, this.rescueNaomi, null, this);
+        }
+        this.helpButton = this.add.text(770, 16, "?", {
+          fontSize: '24px',
+          fontFamily: 'Arial, sans-serif',
+          fontWeight: 'bold',
+          fill: '#ffffff',
+          backgroundColor: '#e74c3c',
+          padding: { x: 10, y: 5 },
+          borderRadius: 15
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        // When clicked, show controls overlay
+        this.helpButton.on('pointerdown', () => {
+          // Create translucent background
+          const helpBg = this.add.rectangle(400, 300, 500, 200, 0x000000, 0.8);
+
+          // Create help text
+          const helpText = this.add.text(400, 300,
+            "CONTROLS:\n\n" +
+            "← → : Move left and right\n" +
+            "↑ : Jump\n" +
+            "Z : Melee Attack\n" +
+            "X : Shoot Arrow\n\n" +
+            "Click anywhere or press any key to close", {
+            fontSize: '18px',
+            fontFamily: 'Arial, sans-serif',
+            fill: '#ffffff',
+            align: 'center'
+          }).setOrigin(0.5);
+
+          // Create a container for all help elements
+          const helpContainer = this.add.container(0, 0, [helpBg, helpText]);
+
+          // Close help on any interaction
+          this.input.once('pointerdown', () => {
+            helpContainer.destroy();
+          });
+          this.input.keyboard.once('keydown', () => {
+            helpContainer.destroy();
+          });
+        });
+
+      }
+
+      update() {
+        if (this.levelComplete) return;
+
+
+        // Player movement
+        if (this.cursors.left.isDown) {
+          this.player.setVelocityX(-160);
+          this.player.flipX = true;
+          if (!this.player.isAttacking && this.player.body.touching.down) {
+            this.player.anims.play('joel_run', true);
+          }
+        } else if (this.cursors.right.isDown) {
+          this.player.setVelocityX(160);
+          this.player.flipX = false;
+          if (!this.player.isAttacking && this.player.body.touching.down) {
+            this.player.anims.play('joel_run', true);
+          }
+        } else {
+          this.player.setVelocityX(0);
+          if (!this.player.isAttacking && this.player.body.touching.down) {
+            this.player.anims.play('joel_idle', true);
+          }
+        }
+
+        // Jump
+        if (this.cursors.up.isDown && this.player.body.touching.down) {
+          this.player.setVelocityY(-400);
+        }
+
+        // Attack input
+        if (Phaser.Input.Keyboard.JustDown(this.attackKey) && !this.player.isAttacking) {
+          this.player.isAttacking = true;
+          this.player.anims.play('joel_attack', true);
+
+          // Reset attack state once animation completes
+          this.player.on('animationcomplete', function (anim) {
+            if (anim.key === 'joel_attack') {
+              this.isAttacking = false;
+            }
+          }, this.player);
+
+          // Check for enemies in attack range
+          this.enemies.getChildren().forEach(enemy => {
+            if (Phaser.Math.Distance.Between(this.player.x, this.player.y, enemy.x, enemy.y) < 70) {
+              // Hit enemy
+              enemy.health -= this.player.attackPower;
+
+              // Knockback
+              if (enemy.x > this.player.x) {
+                enemy.setVelocityX(100);
+              } else {
+                enemy.setVelocityX(-100);
+              }
+
+              // Play hurt animation and particle effect
+              enemy.anims.play('enemy_hurt', true);
+              this.hitEmitter.explode(15, enemy.x, enemy.y);
+              // Audio disabled
+              // this.sound.play('hit');
+
+              // Add safety check for velocity access
+              if (arrow.body && arrow.body.velocity) {
+                // Knock back the enemy
+                if (arrow.body.velocity.x > 0) {
+                  enemy.setVelocityX(100);
+                } else {
+                  enemy.setVelocityX(-100);
+                }
+              }
+              // Check if enemy is defeated
+              if (enemy.health <= 0) {
+                this.defeatEnemy(enemy);
+              }
+
+              // Destroy arrow safely
+              if (arrow.active) {
+                arrow.destroy();
+              }
+            }
+          });
+
+          // Check for boss in attack range (level 5)
+          if (this.level === 5 && this.boss && !this.bossDefeated) {
+            if (Phaser.Math.Distance.Between(this.player.x, this.player.y, this.boss.x, this.boss.y) < 80) {
+              // Only damage if vulnerable
+              if (this.boss.vulnerable) {
+                this.boss.health -= this.player.attackPower;
+                this.hitEmitter.explode(20, this.boss.x, this.boss.y);
+                // Audio disabled
+                // this.sound.play('hit');
+                this.updateBossHealthBar();
+
+                // Check if boss is defeated
+                if (this.boss.health <= 0) {
+                  this.defeatBoss();
+                }
+              } else {
+                // If boss is not vulnerable, bounce player back
+                if (this.player.x < this.boss.x) {
+                  this.player.setVelocityX(-150);
+                } else {
+                  this.player.setVelocityX(150);
+                }
+              }
+            }
+          }
+        }
+
+        // Shoot bow input
+        if (Phaser.Input.Keyboard.JustDown(this.shootKey) && this.player.canShoot && !this.player.onCooldown) {
+          this.player.isAttacking = true;
+          this.player.anims.play('joel_shoot', true);
+
+          // Reset attack state once animation completes
+          this.player.on('animationcomplete', function (anim) {
+            if (anim.key === 'joel_shoot') {
+              this.isAttacking = false;
+            }
+          }, this.player);
+
+          // Create arrow
+          this.shootArrow();
+
+          // Set cooldown
+          this.player.onCooldown = true;
+          this.time.delayedCall(800, function () {
+            this.player.onCooldown = false;
+          }, [], this);
+        }
+
+        // Update boss behavior in level 5
+        if (this.level === 5 && this.boss && !this.bossDefeated) {
+          this.updateBoss();
+        }
+
+        // Update enemies
+        this.enemies.getChildren().forEach(enemy => {
+          // Basic AI movement toward player
+          if (enemy.x < this.player.x) {
+            enemy.setVelocityX(50);
+            enemy.flipX = false;
+          } else {
+            enemy.setVelocityX(-50);
+            enemy.flipX = true;
+          }
+
+          // Play walk animation if not attacking or hurt
+          if (!enemy.isAttacking) {
+            enemy.anims.play('enemy_walk', true);
+          }
+
+          // Attack when close
+          if (Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y) < 60 && !enemy.isAttacking) {
+            enemy.isAttacking = true;
+            enemy.anims.play('enemy_attack', true);
+
+            // Reset attack state once animation completes
+            enemy.on('animationcomplete', function (anim) {
+              if (anim.key === 'enemy_attack') {
+                this.isAttacking = false;
+              }
+            }, enemy);
+          }
+        });
+
+        // Check for level completion
+        if (this.score >= this.winScore ||
+          (this.level === 3 && this.crystal && this.crystal.health <= 0) ||
+          (this.level === 4 && this.naomi && this.naomi.rescued) ||
+          (this.level === 5 && this.bossDefeated)) {
+          this.completeLevel();
+        }
+
+
+      }
+
+      spawnEnemy() {
+        // Don't spawn if level is complete
+        if (this.levelComplete) return;
+
+
+        // Increase difficulty with level
+        const enemyCount = 1 + Math.floor(this.level / 2);
+
+        for (let i = 0; i < enemyCount; i++) {
+          if (Phaser.Math.Between(0, 100) > 30) { // 70% chance to spawn
+            const x = Phaser.Math.Between(50, 750);
+            const y = 50;
+            const enemy = this.enemies.create(x, y, 'enemy');
+
+            // Set enemy properties
+            enemy.health = 20 + (5 * this.level);
+            enemy.attackPower = 5 + (this.level * 2);
+            enemy.isAttacking = false;
+
+            // Start with walk animation
+            enemy.anims.play('enemy_walk', true);
+          }
+        }
+
+
+      }
+
+      shootArrow() {
+        const arrow = this.arrows.create(this.player.x, this.player.y, 'arrow');
+        // Audio disabled
+        // this.sound.play('shoot');
+
+
+        // Set velocity based on facing direction
+        if (this.player.flipX) {
+          arrow.setVelocityX(-500);
+          arrow.angle = 180;
+        } else {
+          arrow.setVelocityX(500);
+        }
+
+        // Add trail particle effect
+        const arrowTrail = this.particles.createEmitter({
+          follow: arrow,
+          scale: { start: 0.1, end: 0 },
+          alpha: { start: 0.5, end: 0 },
+          tint: 0xf39c12,
+          speed: 20,
+          lifespan: 300,
+          frequency: 30
+        });
+
+        // Destroy after a bit over a second if it doesn't hit anything
+        this.time.delayedCall(1100, () => {
+          if (arrow.active) {
+            arrow.destroy();
+            arrowTrail.stop();
+          }
+        });
+
+
+      }
+
+      arrowHitEnemy(arrow, enemy) {
+        // Safety check - make sure both objects still exist
+        if (!arrow || !arrow.active || !enemy || !enemy.active) {
+          return;
+        }
+
+        // Create hit effect
+        this.hitEmitter.explode(10, enemy.x, enemy.y);
+
+        // Try-catch around audio to prevent errors if audio is disabled
+        try {
+          this.sound.play('hit');
+        } catch (e) {
+          // Audio disabled or error
+        }
+
+        // Damage enemy
+        enemy.health -= 1000;
+
+        // Play hurt animation
+        enemy.anims.play('enemy_hurt', true);
+
+        // Check arrow's velocity before using it
+        if (arrow.body && arrow.body.velocity) {
+          // Knock back the enemy
+          if (arrow.body.velocity.x > 0) {
+            enemy.setVelocityX(100);
+          } else {
+            enemy.setVelocityX(-100);
+          }
+        }
+
+        // Check if enemy is defeated
+        if (enemy.health <= 0) {
+          this.defeatEnemy(enemy);
+        }
+
+        // Destroy arrow
+        if (arrow.active) {
+          arrow.destroy();
+        }
+      }
+
+      arrowHitPlatform(arrow, platform) {
+        if (!arrow || !arrow.active) return;
+
+        // Create small hit effect and destroy arrow
+        this.hitEmitter.explode(5, arrow.x, arrow.y);
+        arrow.destroy();
+      }
+
+
+      arrowHitCrystal(arrow, crystal) {
+        if (!arrow || !arrow.active || !crystal || !crystal.active) return;
+        // Create large hit effect
+        this.hitEmitter.explode(20, crystal.x, crystal.y);
+        // Audio disabled
+        // this.sound.play('hit');
+
+
+        // Damage crystal
+        crystal.health -= 10;
+
+        // Visual feedback
+        this.tweens.add({
+          targets: crystal,
+          alpha: 0.6,
+          duration: 100,
+          yoyo: true
+        });
+
+        // If crystal is destroyed
+        if (crystal.health <= 0) {
+          // Big explosion effect
+          this.hitEmitter.explode(50, crystal.x, crystal.y);
+
+          // Screen shake
+          this.cameras.main.shake(500, 0.02);
+
+          // Increase score
+          this.score += 500;
+          this.scoreText.setText('Score: ' + this.score);
+
+          // Flash objective text
+          this.objectiveText.setText("Objective Complete: The crystal is destroyed!");
+          this.objectiveText.setColor('#00ff00');
+        }
+
+        // Destroy arrow
+        arrow.destroy();
+
+
+      }
+
+      defeatEnemy(enemy) {
+        // Create explosion effect
+        this.hitEmitter.explode(20, enemy.x, enemy.y);
+
+
+        // Add score
+        this.score += 100;
+        this.scoreText.setText('Score: ' + this.score);
+
+        // Count enemy defeat for objectives
+        this.enemiesDefeated++;
+
+        // Update objective text based on level
+        if (this.level === 1 && this.enemiesDefeated >= 10) {
+          this.objectiveText.setText("Objective Complete: Information gathered!");
+          this.objectiveText.setColor('#00ff00');
+        }
+
+        // Destroy enemy
+        enemy.destroy();
+
+
+      }
+
+      handleEnemyCollision(player, enemy) {
+        if (!player || !player.active || !enemy || !enemy.active) return;
+        // Only take damage if enemy is attacking
+        if (enemy.isAttacking && !this.player.invulnerable) {
+          // Reduce lives
+          this.lives--;
+          this.livesText.setText('Lives: ' + this.lives);
+
+
+          // Visual feedback
+          this.player.anims.play('joel_hurt', true);
+          this.hitEmitter.explode(15, player.x, player.y);
+          // Audio disabled
+          // this.sound.play('hit');
+
+          // Make player temporarily invulnerable
+          this.player.invulnerable = true;
+          this.player.alpha = 0.5;
+
+          // Knockback
+          if (player.x < enemy.x) {
+            player.setVelocityX(-150);
+          } else {
+            player.setVelocityX(150);
+          }
+          player.setVelocityY(-100);
+
+          // Reset invulnerability after 1 second
+          this.time.delayedCall(1000, function () {
+            this.player.invulnerable = false;
+            this.player.alpha = 1;
+          }, [], this);
+
+          // Check if game over
+          if (this.lives <= 0) {
+            this.gameOver();
+          }
+        }
+
+
+      }
+
+      updateBoss() {
+        // Basic boss AI based on phase
+        switch (this.boss.phase) {
+          case 1: // Circling phase
+            // Move around the player
+            const distX = this.player.x - this.boss.x;
+            const distY = this.player.y - this.boss.y;
+            const dist = Math.sqrt(distX * distX + distY * distY);
+
+
+            if (dist > 200) {
+              // Move closer
+              this.boss.setVelocityX(distX > 0 ? 80 : -80);
+              this.boss.flipX = distX < 0;
+            } else {
+              // Circle around
+              this.boss.setVelocityX(distY > 0 ? -80 : 80);
+              this.boss.flipX = this.boss.body.velocity.x < 0;
+            }
+
+            // Jump occasionally
+            if (this.boss.body.touching.down && Phaser.Math.Between(0, 100) > 95) {
+              this.boss.setVelocityY(-300);
+            }
+
+            // Random attacks
+            if (!this.boss.isAttacking && !this.boss.attackCooldown && Phaser.Math.Between(0, 100) > 90) {
+              this.bossMeleeAttack();
+            }
+
+            // Phase transition
+            if (this.boss.health <= 70) {
+              this.boss.phase = 2;
+              this.boss.vulnerable = false;
+              this.bossSpecialAttack();
+            }
+            break;
+
+          case 2: // Aggressive phase
+            // More direct pursuit
+            if (this.player.x < this.boss.x) {
+              this.boss.setVelocityX(-100);
+              this.boss.flipX = true;
+            } else {
+              this.boss.setVelocityX(100);
+              this.boss.flipX = false;
+            }
+
+            // Jump more aggressively
+            if (this.boss.body.touching.down && this.player.y < this.boss.y - 50) {
+              this.boss.setVelocityY(-350);
+            }
+
+            // More frequent attacks
+            if (!this.boss.isAttacking && !this.boss.attackCooldown && Phaser.Math.Between(0, 100) > 80) {
+              this.bossMeleeAttack();
+            }
+
+            // Phase transition
+            if (this.boss.health <= 30) {
+              this.boss.phase = 3;
+              this.boss.vulnerable = false;
+              this.bossSpecialAttack();
+            }
+            break;
+
+          case 3: // Desperate phase
+            // Erratic movement
+            if (Phaser.Math.Between(0, 100) > 90) {
+              this.boss.setVelocityX(Phaser.Math.Between(-150, 150));
+            }
+
+            // Jump frequently
+            if (this.boss.body.touching.down && Phaser.Math.Between(0, 100) > 70) {
+              this.boss.setVelocityY(Phaser.Math.Between(-400, -250));
+            }
+
+            // Constant attacks
+            if (!this.boss.isAttacking && !this.boss.attackCooldown && Phaser.Math.Between(0, 100) > 60) {
+              this.bossMeleeAttack();
+            }
+
+            // Periodic special attacks
+            if (!this.boss.isAttacking && !this.boss.attackCooldown && Phaser.Math.Between(0, 100) > 95) {
+              this.bossSpecialAttack();
+            }
+            break;
+        }
+
+
+      }
+
+      bossMeleeAttack() {
+        this.boss.isAttacking = true;
+        this.boss.anims.play('boss_attack', true);
+
+
+        // Check if player is in range mid-animation
+        this.time.delayedCall(300, () => {
+          if (Phaser.Math.Distance.Between(this.player.x, this.player.y, this.boss.x, this.boss.y) < 100 && !this.player.invulnerable) {
+            // Deal damage to player
+            this.lives--;
+            this.livesText.setText('Lives: ' + this.lives);
+
+            // Visual feedback
+            this.player.anims.play('joel_hurt', true);
+            this.hitEmitter.explode(20, this.player.x, this.player.y);
+            // Audio disabled
+            // this.sound.play('hit');
+
+            // Knockback
+            const angle = Phaser.Math.Angle.Between(this.boss.x, this.boss.y, this.player.x, this.player.y);
+            this.player.setVelocityX(Math.cos(angle) * 300);
+            this.player.setVelocityY(Math.sin(angle) * 300);
+
+            // Make player temporarily invulnerable
+            this.player.invulnerable = true;
+            this.player.alpha = 0.5;
+
+            // Reset invulnerability after 1 second
+            this.time.delayedCall(1000, function () {
+              this.player.invulnerable = false;
+              this.player.alpha = 1;
+            }, [], this);
+
+            // Check if game over
+            if (this.lives <= 0) {
+              this.gameOver();
+            }
+          }
+        });
+
+        // Reset attack state and set cooldown
+        this.time.delayedCall(600, () => {
+          this.boss.isAttacking = false;
+          this.boss.attackCooldown = true;
+          this.time.delayedCall(1000, () => {
+            this.boss.attackCooldown = false;
+          });
+        });
+
+
+      }
+
+      bossSpecialAttack() {
+        // Boss activates injection sites (from story)
+        this.boss.isAttacking = true;
+        this.boss.anims.play('boss_special', true);
+
+
+        // Visual effects
+        this.cameras.main.flash(500, 255, 50, 50);
+        // Audio disabled
+        // this.sound.play('levelup');
+
+        // Create particle burst
+        this.hitEmitter.explode(50, this.boss.x, this.boss.y);
+
+        // After animation, boss becomes vulnerable at injection sites
+        this.time.delayedCall(1000, () => {
+          this.boss.isAttacking = false;
+          this.boss.vulnerable = true;
+
+          // Text hint
+          const hintText = this.add.text(400, 120, "Attack the glowing injection sites!", {
+            fontSize: '18px',
+            fontFamily: 'Arial, sans-serif',
+            fill: '#ffffff',
+            backgroundColor: '#e74c3c',
+            padding: { x: 10, y: 5 }
+          }).setOrigin(0.5).setDepth(100);
+
+          // Remove hint after 3 seconds
+          this.time.delayedCall(3000, () => {
+            hintText.destroy();
+          });
+
+          // Boss is vulnerable for 5 seconds
+          this.time.delayedCall(5000, () => {
+            this.boss.vulnerable = false;
+          });
+        });
+
+
+      }
+
+      handleBossCollision(player, boss) {
+        if (!player || !player.active || !boss || !boss.active) return;
+        // Only take damage if boss is attacking and player is not invulnerable
+        if (!this.player.invulnerable && (this.boss.isAttacking || Phaser.Math.Between(0, 100) > 90)) {
+          // Reduce lives
+          this.lives--;
+          this.livesText.setText('Lives: ' + this.lives);
+
+
+          // Visual feedback
+          this.player.anims.play('joel_hurt', true);
+          this.hitEmitter.explode(20, player.x, player.y);
+          // Audio disabled
+          // this.sound.play('hit');
+
+          // Make player temporarily invulnerable
+          this.player.invulnerable = true;
+          this.player.alpha = 0.5;
+
+          // Knockback
+          if (player.x < boss.x) {
+            player.setVelocityX(-200);
+          } else {
+            player.setVelocityX(200);
+          }
+          player.setVelocityY(-150);
+
+          // Reset invulnerability after 1 second
+          this.time.delayedCall(1000, function () {
+            this.player.invulnerable = false;
+            this.player.alpha = 1;
+          }, [], this);
+
+          // Check if game over
+          if (this.lives <= 0) {
+            this.gameOver();
+          }
+        }
+
+
+      }
+
+      arrowHitBoss(arrow, boss) {
+        if (!arrow || !arrow.active || !boss || !boss.active) return;
+        // Only take damage if boss is vulnerable
+        if (this.boss.vulnerable) {
+          // Create hit effect
+          this.hitEmitter.explode(15, boss.x, boss.y);
+          // Audio disabled
+          // this.sound.play('hit');
+        
+
+          // Damage boss
+          this.boss.health -= 10;
+          this.updateBossHealthBar();
+
+          // Check if boss is defeated
+          if (this.boss.health <= 0) {
+            this.defeatBoss();
+          }
+        } else {
+          // Arrows bounce off when boss is not vulnerable
+          this.hitEmitter.explode(5, arrow.x, arrow.y);
+        }
+
+        // Destroy arrow
+        arrow.destroy();
+
+
+      }
+
+      updateBossHealthBar() {
+        this.bossHealthBar.clear();
+
+
+        // Background
+        this.bossHealthBar.fillStyle(0x000000, 0.5);
+        this.bossHealthBar.fillRect(300, 80, 200, 20);
+
+        // Health (red, scales with current health)
+        const healthPercent = Math.max(0, this.boss.health / 100);
+        this.bossHealthBar.fillStyle(0xe74c3c, 1);
+        this.bossHealthBar.fillRect(300, 80, 200 * healthPercent, 20);
+
+
+      }
+
+      defeatBoss() {
+        this.bossDefeated = true;
+
+
+        // Create massive explosion
+        this.hitEmitter.explode(100, this.boss.x, this.boss.y);
+        // Audio disabled
+        // this.sound.play('levelup');
+
+        // Camera effects
+        this.cameras.main.shake(1000, 0.03);
+        this.cameras.main.flash(500, 255, 255, 255);
+
+        // Update score
+        this.score += 5000;
+        this.scoreText.setText('Score: ' + this.score);
+
+        // Update objective
+        this.objectiveText.setText("Objective Complete: Kain has been defeated!");
+        this.objectiveText.setColor('#00ff00');
+
+        // Remove boss
+        this.boss.destroy();
+
+        // Complete level after short delay
+        this.time.delayedCall(2000, this.completeLevel, [], this);
+
+
+      }
+
+      rescueNaomi(player, naomi) {
+        if (!naomi.rescued) {
+          naomi.rescued = true;
+
+
+          // Visual feedback
+          this.hitEmitter.explode(20, naomi.x, naomi.y);
+          // Audio disabled
+          // this.sound.play('levelup');
+
+          // Update objective
+          this.objectiveText.setText("Objective Complete: Naomi has been rescued!");
+          this.objectiveText.setColor('#00ff00');
+
+          // Update score
+          this.score += 2000;
+          this.scoreText.setText('Score: ' + this.score);
+
+          // Make Naomi follow player
+          this.time.addEvent({
+            delay: 100,
+            callback: () => {
+              if (naomi.x < player.x - 50) {
+                naomi.setVelocityX(80);
+              } else if (naomi.x > player.x + 50) {
+                naomi.setVelocityX(-80);
+              } else {
+                naomi.setVelocityX(0);
+              }
+
+              // Jump if needed
+              if (naomi.body.touching.down && player.y < naomi.y - 50) {
+                naomi.setVelocityY(-300);
+              }
+            },
+            callbackScope: this,
+            loop: true
+          });
+        }
+
+
+      }
+
+      completeLevel() {
+        if (this.levelComplete) return;
+
+
+        this.levelComplete = true;
+
+        // Stop enemy spawning
+        this.enemies.clear(true, true);
+
+        // Visual effects
+        this.cameras.main.flash(1000, 255, 255, 255);
+        // Audio disabled
+        // this.sound.play('levelup');
+
+        // Display level complete text
+        const completionText = this.add.text(400, 300, 'LEVEL COMPLETE', {
+          fontSize: '48px',
+          fontFamily: 'Arial, sans-serif',
+          fontWeight: 'bold',
+          fill: '#ffffff',
+          stroke: '#e74c3c',
+          strokeThickness: 6,
+          shadow: { offsetX: 2, offsetY: 2, color: '#000', blur: 5, stroke: true, fill: true }
+        }).setOrigin(0.5);
+
+        // Add animation to text
+        this.tweens.add({
+          targets: completionText,
+          scaleX: 1.2,
+          scaleY: 1.2,
+          duration: 500,
+          yoyo: true,
+          repeat: 1
+        });
+
+        // After a delay, proceed to next level or ending
+        this.time.delayedCall(3000, () => {
+          // Progress to next level
+          let nextLevel = this.level + 1;
+
+
+          // Extra lives for completing a level
+          this.lives += 1;
+
+          if (nextLevel > 5) {
+            // Game complete - go to ending scene
+            this.scene.start('GameOverScene', { score: this.score, won: true });
+          } else {
+            // Go to next story scene
+            this.scene.start('StoryScene', {
+              level: nextLevel,
+              lives: this.lives,
+              score: this.score
+            });
+          }
+        });
+
+
+      }
+
+      gameOver() {
+        // Stop all gameplay
+        this.physics.pause();
+        this.levelComplete = true;
+
+
+        // Visual effects
+        this.cameras.main.shake(500, 0.05);
+        this.cameras.main.flash(1000, 255, 0, 0);
+
+        // Game over text
+        const gameOverText = this.add.text(400, 300, 'GAME OVER', {
+          fontSize: '48px',
+          fontFamily: 'Arial, sans-serif',
+          fontWeight: 'bold',
+          fill: '#ffffff',
+          stroke: '#e74c3c',
+          strokeThickness: 6
+        }).setOrigin(0.5);
+
+        // After a delay, go to game over scene
+        this.time.delayedCall(3000, () => {
+          this.scene.start('GameOverScene', { score: this.score, won: false });
+        });
+
+
+      }
+    }
+
+    // GAME OVER SCENE: Display final narrative text and score
+    class GameOverScene extends Phaser.Scene {
+      constructor() {
+        super('GameOverScene');
+      }
+
+      init(data) {
+        this.score = data.score;
+        this.won = data.won || false;
+      }
+
+      create() {
+        // Background based on if player won or lost
+        if (this.won) {
+          this.add.image(400, 300, 'bg_level5');
+        } else {
+          this.add.image(400, 300, 'bg_level3');
+        }
+
+        // Add overlay for better text visibility
+        this.add.rectangle(400, 300, 800, 600, 0x000000, 0.7);
+
+        // Create different ending text based on win or loss
+        let title, endText;
+        if (this.won) {
+          // Victory
+          title = "LEGEND COMPLETE";
+
+          endText = "One year after Kain's defeat, the Hunter Association was dismantled. A new system rose from its ashes, with Joel at its center.\n\n" +
+            "Naomi became the leading mind behind the new Hunter Network, ensuring power never corrupted like before.\n\n" +
+            "Dante continued training the next generation of Hunters, passing on the lessons he had learned through blood and sacrifice.\n\n" +
+            "And Joel? He became more than a Hunter. He became a legend - the one who ended an empire and rebuilt a world.";
+
+          // Victory particle effects
+          this.particles = this.add.particles('spark');
+          this.emitter = this.particles.createEmitter({
+            x: 400,
+            y: 150,
+            speed: { min: 40, max: 120 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 0.3, end: 0 },
+            blendMode: 'ADD',
+            lifespan: 1500,
+            frequency: 40
+          });
+        } else {
+          // Defeat
+          title = "JOURNEY ENDED";
+
+          endText = "The path of a Hunter is fraught with danger. Not every legend ends in glory.\n\n" +
+            "Joel's journey was cut short, but his actions were not in vain. The truth about the Hunter Association's corruption had been exposed.\n\n" +
+            "Perhaps another Hunter will rise to finish what Joel started. Perhaps Dante will continue the fight alone.\n\n" +
+            "The battle against corruption continues, even as Joel's legend fades into shadow.";
+        }
+
+        // Display title
+        this.add.text(400, 100, title, {
+          fontSize: '48px',
+          fontFamily: 'Arial, sans-serif',
+          fontWeight: 'bold',
+          fill: this.won ? '#f39c12' : '#e74c3c',
+          stroke: '#000000',
+          strokeThickness: 4
+        }).setOrigin(0.5);
+
+        // Display ending narrative - LOWERED HEIGHT
+        this.add.text(400, 250, endText, {
+          fontSize: '18px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#ffffff',
+          align: 'center',
+          lineSpacing: 10,
+          wordWrap: { width: 700 }
+        }).setOrigin(0.5, 0);
+
+        // Final score - LOWERED POSITION 
+        this.add.text(400, 450, `Final Score: ${this.score}`, {
+          fontSize: '24px',
+          fontFamily: 'Arial, sans-serif',
+          fontWeight: 'bold',
+          fill: '#f39c12'
+        }).setOrigin(0.5);
+
+        // Create return to menu button - MOVED FURTHER DOWN
+        const restartButton = this.add.image(400, 520, 'button');
+        const restartText = this.add.text(400, 520, "RETURN TO MENU", {
+          fontSize: '22px',
+          fontFamily: 'Arial, sans-serif',
+          fontWeight: 'bold',
+          fill: '#ffffff'
+        }).setOrigin(0.5);
+
+        // Add control reminder
+        this.add.text(400, 570, "Press SPACE to return to main menu", {
+          fontSize: '14px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#cccccc'
+        }).setOrigin(0.5);
+
+        // Make button interactive
+        restartButton.setInteractive({ useHandCursor: true })
+          .on('pointerover', () => {
+            restartButton.setScale(1.05);
+            restartText.setScale(1.05);
+          })
+          .on('pointerout', () => {
+            restartButton.setScale(1);
+            restartText.setScale(1);
+          })
+          .on('pointerdown', () => {
+            this.scene.start('MainMenuScene');
+          });
+
+        // Keyboard control
+        this.input.keyboard.on('keydown-SPACE', () => {
+          this.scene.start('MainMenuScene');
+        });
+      }
+    }
+    // UI OVERLAY SCENE: Displays persistent UI elements like controls
+    class UIScene extends Phaser.Scene {
+      constructor() {
+        super({ key: 'UIScene', active: true });
+      }
+
+      create() {
+        // Create a semi-transparent help button at the top right
+        this.helpButton = this.add.text(790, 10, "?", {
+          fontSize: '20px',
+          fontFamily: 'Arial, sans-serif',
+          fontWeight: 'bold',
+          fill: '#ffffff',
+          backgroundColor: 'rgba(231, 76, 60, 0.7)',
+          padding: { x: 8, y: 4 }
+        }).setOrigin(1, 0).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+
+        // When clicked, show controls overlay
+        this.helpButton.on('pointerdown', () => {
+          this.showControlsHelp();
+        });
+
+        // Make the button visible only during gameplay scenes
+        this.helpButton.setVisible(false);
+
+        // Alternative approach to listen for scene changes
+        this.checkActiveScene();
+
+        // Set up scene event listeners
+        this.events.on('update', this.checkActiveScene, this);
+      }
+
+      checkActiveScene() {
+        // Check which scene is active and set button visibility accordingly
+        const activeScene = this.scene.manager.getScenes(true)[0];
+        if (activeScene && activeScene.scene.key === 'LevelScene') {
+          this.helpButton.setVisible(true);
+        } else {
+          this.helpButton.setVisible(false);
+        }
+      }
+
+      showControlsHelp() {
+        // Create translucent background
+        const helpBg = this.add.rectangle(400, 300, 500, 200, 0x000000, 0.8);
+
+        // Create help text
+        const helpText = this.add.text(400, 300,
+          "CONTROLS:\n\n" +
+          "← → : Move left and right\n" +
+          "↑ : Jump\n" +
+          "Z : Melee Attack\n" +
+          "X : Shoot Arrow\n\n" +
+          "Click anywhere or press any key to close", {
+          fontSize: '18px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#ffffff',
+          align: 'center'
+        }).setOrigin(0.5);
+
+        // Create a container for all help elements
+        const helpContainer = this.add.container(0, 0, [helpBg, helpText]);
+
+        // Close help on any interaction
+        this.input.once('pointerdown', () => {
+          helpContainer.destroy();
+        });
+        this.input.keyboard.once('keydown', () => {
+          helpContainer.destroy();
+        });
+      }
+    }
+
+    // Add all scenes to the game
+    config.scene = [
+      BootScene,
+      PreloadScene,
+      MainMenuScene,
+      StoryScene,
+      LevelScene,
+      GameOverScene,
+      UIScene
+    ];
+
+    // Create the game
+    const game = new Phaser.Game(config);
+  </script>
+</body>
+
+</html>

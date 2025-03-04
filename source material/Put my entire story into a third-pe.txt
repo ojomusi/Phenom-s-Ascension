@@ -1,0 +1,8 @@
+Put my entire story into a third-person perspective without removing any of the content or detail. For decisions, make whatever decision I made canon to what Joel did.
+
+
+Make this story into an HTML5 beat-em-up sidescroller/vertical scroller game called Phenom's Ascension that looks like Streets of Rage. Use art based on the characters. Make levels/stages based on the story and its chapters. The user has 3 lives. Use particle and aura special effects and have the primary colors be based on the story. 
+Score increases when you defeat an enemy, get past an enemy, or finish a level.
+Use art sprites and animation based on the characters in the story and have them all be of the same style.
+The beginning of the game, ending of the game, and the levels should each have text from the story explaining what's going on.  
+
