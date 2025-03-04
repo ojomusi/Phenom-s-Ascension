@@ -11,7 +11,6 @@
 - Unlock **new abilities** as you progress.  
 - Uncover the **secrets of the Hunter Association** and **defeat Kain**.  
 
-🎮 **[Play the Game](https://ojomusi.github.io/phenoms-ascension)** | 📖 **[View the Storyboard](docs/storyboard.md)**  
 
 ---
 
