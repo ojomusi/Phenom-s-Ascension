@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-
+<!-- Run python -m http.server 8000 in terminal then open localhost:8000/Phenoms%20Ascension.html in browser -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Phenom's Ascension</title>
   <!-- Phaser 3 from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+  <!-- Game utilities -->
+  <script src="gameUtils.js"></script>
   <style>
     body {
       margin: 0;
@@ -164,11 +166,15 @@
         // Load UI elements
         this.load.image('button', 'assets/images/ui/button.png');
 
-        // Audio is commented out as requested
-        // this.load.audio('theme', ['assets/audio/theme.mp3']);
-        // this.load.audio('hit', ['assets/audio/hit.mp3']);
-        // this.load.audio('shoot', ['assets/audio/shoot.mp3']);
-        // this.load.audio('levelup', ['assets/audio/levelup.mp3']);
+        // Try local files first
+        this.load.audio('theme', 'assets/audio/theme.mp3');
+        this.load.audio('leveltheme', 'assets/audio/leveltheme.mp3');
+        this.load.audio('hit', 'assets/audio/hit.wav');
+        this.load.audio('shoot', 'assets/audio/shoot.mp3');
+        this.load.audio('levelup', 'assets/audio/levelup.wav');
+        this.load.audio('boss_hit', 'assets/audio/boss_hit.mp3');
+        this.load.audio('boss_roar', 'assets/audio/boss_roar.wav');
+        
       }
 
 
@@ -272,11 +278,11 @@
 
       create() {
         // Play theme music
-        this.theme = {
-          play: function () { },
-          stop: function () { }
-        };
-
+        this.theme = this.sound.add('theme', {
+          volume: 0.5,
+          loop: true
+        });
+        this.theme.play();
 
         // Display a background
         this.add.image(400, 300, 'bg_level1');
@@ -368,8 +374,7 @@
             // Flash effect
             this.cameras.main.flash(500, 255, 255, 255);
             // Play level-up sound
-            // Audio disabled
-            // this.sound.play('levelup');
+            this.sound.play('levelup');
 
             // Stop music and transition after a short delay
             this.time.delayedCall(700, () => {
@@ -444,11 +449,13 @@
             break;
           default:
             storyTitle = "Epilogue";
-            storyText = "One year after Kain's defeat, the Hunter Association has been dismantled. A new system rises from its ashes, with Joel at its center.\n\nNaomi leads the new Hunter Network, Dante trains the next generation of Hunters, Mira runs a sanctuary for those harmed by the old system, and the Iron Fangs ensure no one like Kain rises again.\n\nAs for Joel, he has become a legend - the one who brought down an empire and rebuilt a world.";
+            storyText = "One year after Kain's defeat, the Hunter Association has been dismantled. A new system rises from its ashes, with Joel at its center.\n\n" +
+              "Naomi leads the new Hunter Network, Dante trains the next generation of Hunters, Mira runs a sanctuary for those harmed by the old system, and the Iron Fangs ensure no one like Kain rises again.\n\n" +
+              "As for Joel, he has become a legend - the one who brought down an empire and rebuilt a world.";
         }
 
         // Display title with red energy effect
-        const titleText = this.add.text(400, 100, storyTitle, {
+        const titleText = this.add.text(400, 80, storyTitle, {
           fontSize: '36px',
           fontFamily: 'Arial, sans-serif',
           fontWeight: 'bold',
@@ -461,7 +468,7 @@
         this.particles = this.add.particles('spark');
         this.emitter = this.particles.createEmitter({
           x: 400,
-          y: 100,
+          y: 80,
           speed: { min: 10, max: 50 },
           angle: { min: 0, max: 360 },
           scale: { start: 0.1, end: 0 },
@@ -470,8 +477,8 @@
           frequency: 100
         });
 
-        // Narrative text with typewriter effect
-        const narrativeText = this.add.text(400, 300, "", {
+        // Narrative text with typewriter effect - Moved much higher
+        const narrativeText = this.add.text(400, 180, "", {
           fontSize: '18px',
           fontFamily: 'Arial, sans-serif',
           fill: '#ffffff',
@@ -480,37 +487,35 @@
           wordWrap: { width: 700 }
         }).setOrigin(0.5, 0);
 
-        // Stats display based on level
-        const statsText = this.add.text(400, 500, "", {
-          fontSize: '16px',
+        // Stats display based on level - Kept lower for visibility
+        const statsText = this.add.text(400, 450, "", {
+          fontSize: '20px',
           fontFamily: 'Arial, sans-serif',
           fill: '#f39c12',
-          align: 'center'
+          align: 'center',
+          stroke: '#000000',
+          strokeThickness: 1
         }).setOrigin(0.5);
 
-        // Show appropriate stats for level
+        // Show appropriate stats for level with improved visibility
         switch (this.level) {
-          case 1:
-            break; // No stats yet
-          case 2:
-            statsText.setText("[+1 AGILITY] [+1 ENDURANCE]\n[+1 RESPECT from Dante] [+1 MENTAL FORTITUDE]");
+          case 1: statsText.setText("[+1 AGILITY]  [+1 ENDURANCE]\n[+1 RESPECT from Dante]  [+1 MENTAL FORTITUDE]");
             break;
-          case 3:
-            statsText.setText("[+1 DODGE REFLEX] [+1 RESPECT from Dante]\n[+1 ARCHERY SKILL] [+1 STEALTH] [+1 REFLEXES]");
+          case 2: statsText.setText("[+1 DODGE REFLEX]  [+1 RESPECT from Dante]\n[+1 ARCHERY SKILL]  [+1 STEALTH]  [+1 REFLEXES]");
             break;
-          case 4:
-            statsText.setText("[+2 RESPECT FROM DANTE] [+2 AGILITY]\n[+1 PRECISION] [+1 TOUGHNESS]");
+          case 3: statsText.setText("[+2 RESPECT FROM DANTE]  [+2 AGILITY]\n[+1 PRECISION]  [+1 TOUGHNESS]");
             break;
-          case 5:
-            statsText.setText("[+1 STEALTH] [+1 TACTICAL PLANNING]\n[+1 INTERROGATION] [+1 LEADERSHIP]");
+          case 4: statsText.setText("[+1 STEALTH]  [+1 TACTICAL PLANNING]\n[+1 INTERROGATION]  [+1 LEADERSHIP]");
+            break;
+          case 5: statsText.setText("[+1 STEALTH]  [+1 TACTICAL PLANNING]\n[+1 INTERROGATION]  [+1 LEADERSHIP]");
             break;
           default:
-            statsText.setText("[+1 COMBAT ANALYSIS] [+1 ADAPTABILITY]\n[FINAL COMBAT MASTERY UNLOCKED]");
+            statsText.setText("[+1 COMBAT ANALYSIS]  [+1 ADAPTABILITY]\n[FINAL COMBAT MASTERY UNLOCKED]");
         }
 
-        // "Continue" button (appears after text is fully displayed)
-        const continueButton = this.add.image(400, 550, 'button').setVisible(false);
-        const continueText = this.add.text(400, 550, "CONTINUE", {
+        // "Continue" button (appears after text is fully displayed) - Moved down
+        const continueButton = this.add.image(400, 520, 'button').setVisible(false);
+        const continueText = this.add.text(400, 520, "CONTINUE", {
           fontSize: '24px',
           fontFamily: 'Arial, sans-serif',
           fontWeight: 'bold',
@@ -601,6 +606,26 @@
         this.statPoints = 0;
         this.levelComplete = false;
         this.bossDefeated = false;
+        this.maxEnemies = 3 + Math.floor(this.level / 2); // Maximum enemies based on level
+        this.levelTheme = this.sound.add('leveltheme', { volume: 0.3 });
+        this.levelTheme.play();
+
+        // Initialize sound effects with error handling
+        try {
+          this.hitSound = this.sound.add('hit', { volume: 0.3 });
+          this.shootSound = this.sound.add('shoot', { volume: 0.3 });
+          this.levelUpSound = this.sound.add('levelup', { volume: 0.5 });
+          this.bossHitSound = this.sound.add('boss_hit', { volume: 0.4 });
+          this.bossRoarSound = this.sound.add('boss_roar', { volume: 0.5 });
+        } catch (e) {
+          console.log('Sound initialization failed, continuing without audio');
+          // Create dummy sound objects that won't cause errors
+          this.hitSound = { play: () => {} };
+          this.shootSound = { play: () => {} };
+          this.levelUpSound = { play: () => {} };
+          this.bossHitSound = { play: () => {} };
+          this.bossRoarSound = { play: () => {} };
+        }
       }
 
       create() {
@@ -620,10 +645,11 @@
             this.platforms.create(400, 250, 'button').setScale(1.5, 0.5).refreshBody();
             break;
           case 2: // Warehouse training
-            this.platforms.create(150, 400, 'button').setScale(1, 0.5).refreshBody();
-            this.platforms.create(350, 350, 'button').setScale(1, 0.5).refreshBody();
-            this.platforms.create(550, 400, 'button').setScale(1, 0.5).refreshBody();
-            this.platforms.create(700, 250, 'button').setScale(1, 0.5).refreshBody();
+            // Modified platform layout with even shorter platforms for better enemy movement
+            this.platforms.create(150, 400, 'button').setScale(0.45, 0.5).refreshBody();
+            this.platforms.create(350, 350, 'button').setScale(0.45, 0.5).refreshBody();
+            this.platforms.create(520, 450, 'button').setScale(0.45, 0.5).refreshBody();
+            this.platforms.create(675, 250, 'button').setScale(0.6, 0.5).refreshBody();
             break;
           case 3: // Dungeon/Temple
             this.platforms.create(200, 500, 'button').setScale(1.5, 0.5).refreshBody();
@@ -643,7 +669,7 @@
             this.platforms.create(400, 400, 'button').setScale(2, 0.5).refreshBody();
             this.platforms.create(200, 300, 'button').setScale(2, 0.5).refreshBody();
             this.platforms.create(400, 200, 'button').setScale(2, 0.5).refreshBody();
-            this.platforms.create(600, 320, 'button').setScale(0.5, 0.5).refreshBody();
+            
             break;
         }
 
@@ -672,11 +698,14 @@
         if (this.level === 5) {
           this.boss = this.physics.add.sprite(650, 100, 'boss');
           this.boss.setCollideWorldBounds(true);
-          this.boss.health = 100; // Boss has more health
+          this.boss.health = 150; // Boss has more health
+          this.boss.maxHealth = 150; // Add max health for reference
           this.boss.isAttacking = false;
           this.boss.attackCooldown = false;
-          this.boss.vulnerable = false; // Boss starts invulnerable
+          this.boss.isVulnerable = false; // Boss starts invulnerable
           this.boss.phase = 1;
+          this.boss.vulnerableDuration = 5000; // 5 seconds vulnerability
+          this.bossDefeated = false; // Explicitly set defeated state
 
           // Start idle animation
           this.boss.anims.play('boss_idle', true);
@@ -714,7 +743,20 @@
         this.attackKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
         this.shootKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
 
-        // Level-based stats display
+        // Set up UI with better spacing
+        this.livesText = this.add.text(16, 16, 'Lives: ' + this.lives, {
+          fontSize: '18px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#ffffff'
+        });
+
+        this.scoreText = this.add.text(16, 46, 'Score: ' + this.score, {
+          fontSize: '18px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#ffffff'
+        });
+
+        // Level-based stats display - Moved to prevent overlap
         let statsText = "";
         switch (this.level) {
           case 1: statsText = "LEVEL 1: Hunter Association\nAGILITY: 1 | ENDURANCE: 1 | STEALTH: 1"; break;
@@ -724,34 +766,23 @@
           case 5: statsText = "LEVEL 5: The Final Battle\nTACTICAL: 3 | LEADERSHIP: 3 | COMBAT: 4"; break;
         }
 
+        // Initialize pathfinder
+        this.pathFinder = new PathFinder(this);
 
-        // Set up UI
-        this.livesText = this.add.text(16, 16, 'Lives: ' + this.lives, {
-          fontSize: '18px',
-          fontFamily: 'Arial, sans-serif',
-          fill: '#ffffff'
-        });
-        this.scoreText = this.add.text(16, 40, 'Score: ' + this.score, {
-          fontSize: '18px',
-          fontFamily: 'Arial, sans-serif',
-          fill: '#ffffff'
-        });
-        // ADD THESE LINES - Controls reminder
-        this.controlsText = this.add.text(16, 580, "← → : Move   ↑ : Jump   Z: Attack   X: Shoot", {
-          fontSize: '12px',
-          fontFamily: 'Arial, sans-serif',
-          fill: '#cccccc',
-          backgroundColor: 'rgba(0,0,0,0.3)',
-          padding: { x: 5, y: 3 }
-        });
+        // Remove any existing stats display
+        if (this.statsDisplay) {
+            this.statsDisplay.destroy();
+        }
+
+        // Create single stats display at the correct position
         this.statsDisplay = this.add.text(400, 20, statsText, {
-          fontSize: '14px',
-          fontFamily: 'Arial, sans-serif',
-          fill: '#f39c12',
-          align: 'center'
+            fontSize: '14px',
+            fontFamily: 'Arial, sans-serif',
+            fill: '#f39c12',
+            align: 'center'
         }).setOrigin(0.5, 0);
 
-        // Level objective text
+        // Level objective text - Adjusted position
         let objectiveText = "";
         switch (this.level) {
           case 1: objectiveText = "Objective: Gather information (Defeat 10 Association agents)"; break;
@@ -761,7 +792,7 @@
           case 5: objectiveText = "Objective: Defeat Kain and end the corruption"; break;
         }
 
-        this.objectiveText = this.add.text(400, 50, objectiveText, {
+        this.objectiveText = this.add.text(400, 60, objectiveText, {
           fontSize: '16px',
           fontFamily: 'Arial, sans-serif',
           fill: '#e74c3c',
@@ -871,11 +902,109 @@
           });
         });
 
+        // Add stealth-related properties to player
+        this.player.isStealthed = false;
+        this.player.stealthCooldown = false;
+        this.player.detectionRadius = 150;
+        this.player.stealthKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+
+        // Add stealth indicator
+        this.stealthIndicator = this.add.text(16, 64, 'Stealth: Ready', {
+          fontSize: '16px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#ffffff'
+        });
+
+        // Add enemy vision cones (for stealth visualization)
+        this.visionCones = this.add.graphics();
+        
+        // Add detection meter
+        this.detectionMeter = this.add.graphics();
+        this.player.detectionLevel = 0;
+
+        // Add pause key
+        this.pauseKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+        this.isPaused = false;
+        this.pauseMenu = null;
+        this.masterVolume = 1;
       }
 
       update() {
+        if (Phaser.Input.Keyboard.JustDown(this.pauseKey)) {
+          this.togglePause();
+        }
+
+        if (this.isPaused) return;
+
         if (this.levelComplete) return;
 
+        // Update enemies with pathfinding
+        this.enemies.getChildren().forEach(enemy => {
+          if (!enemy.isAttacking) {
+            this.pathFinder.findPathToPlayer(enemy);
+            enemy.anims.play('enemy_walk', true);
+          }
+
+          // Attack when close
+          if (Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y) < 60 && !enemy.isAttacking) {
+            enemy.isAttacking = true;
+            enemy.anims.play('enemy_attack', true);
+
+            enemy.on('animationcomplete', function (anim) {
+              if (anim.key === 'enemy_attack') {
+                this.isAttacking = false;
+              }
+            }, enemy);
+          }
+        });
+
+        // Update stealth mechanics
+        if (Phaser.Input.Keyboard.JustDown(this.player.stealthKey) && !this.player.stealthCooldown && this.level >= 3) {
+          this.toggleStealth();
+        }
+
+        // Update stealth status
+        if (this.player.isStealthed) {
+          this.player.alpha = 0.6;
+          this.player.detectionRadius = 80; // Reduced detection radius while stealthed
+          this.stealthIndicator.setText('Stealth: Active').setColor('#00ff00');
+        } else {
+          this.player.alpha = 1;
+          this.player.detectionRadius = 150;
+          if (!this.player.stealthCooldown) {
+            this.stealthIndicator.setText('Stealth: Ready').setColor('#ffffff');
+          } else {
+            this.stealthIndicator.setText('Stealth: Cooling Down').setColor('#ff0000');
+          }
+        }
+
+        // Clear previous vision cones
+        this.visionCones.clear();
+
+        // Draw enemy vision cones and handle detection
+        this.enemies.getChildren().forEach(enemy => {
+          // Draw vision cone
+          this.drawVisionCone(enemy);
+          
+          // Check if player is in vision cone
+          if (this.isPlayerInVisionCone(enemy)) {
+            if (!this.player.isStealthed) {
+              this.player.detectionLevel = Math.min(100, this.player.detectionLevel + 2);
+            } else {
+              this.player.detectionLevel = Math.min(100, this.player.detectionLevel + 0.5);
+            }
+          } else {
+            this.player.detectionLevel = Math.max(0, this.player.detectionLevel - 1);
+          }
+        });
+
+        // Update detection meter
+        this.updateDetectionMeter();
+
+        // If fully detected, alert enemies
+        if (this.player.detectionLevel >= 100) {
+          this.alertEnemies();
+        }
 
         // Player movement
         if (this.cursors.left.isDown) {
@@ -907,77 +1036,120 @@
           this.player.isAttacking = true;
           this.player.anims.play('joel_attack', true);
 
-          // Reset attack state once animation completes
-          this.player.on('animationcomplete', function (anim) {
-            if (anim.key === 'joel_attack') {
-              this.isAttacking = false;
-            }
-          }, this.player);
+          // Check if it's a charged attack
+          const isChargedAttack = this.attackKey.getDuration() > 1000;
+          
+          if (isChargedAttack) {
+            // Charged attack animation and effects
+            this.player.anims.play('joel_attack', true);
+            
+            // Create charged attack particles
+            const chargedParticles = this.add.particles('spark');
+            const chargedEmitter = chargedParticles.createEmitter({
+              x: this.player.x,
+              y: this.player.y,
+              speed: { min: 100, max: 200 },
+              scale: { start: 0.3, end: 0 },
+              alpha: { start: 1, end: 0 },
+              tint: 0xff0000,
+              lifespan: 500,
+              frequency: 20
+            });
 
-          // Check for enemies in attack range
-          this.enemies.getChildren().forEach(enemy => {
-            if (Phaser.Math.Distance.Between(this.player.x, this.player.y, enemy.x, enemy.y) < 70) {
-              // Hit enemy
-              enemy.health -= this.player.attackPower;
+            // Create attack hitbox with increased range
+            const attackRange = 100; // Increased from 81
+            const attackX = this.player.flipX ? this.player.x - attackRange : this.player.x + attackRange;
+            const attackY = this.player.y;
 
-              // Knockback
-              if (enemy.x > this.player.x) {
-                enemy.setVelocityX(100);
-              } else {
-                enemy.setVelocityX(-100);
+            // Check for boss in attack range
+            if (this.level === 5 && this.boss && !this.bossDefeated) {
+              if (Phaser.Math.Distance.Between(attackX, attackY, this.boss.x, this.boss.y) < attackRange) {
+                // Only damage if vulnerable
+                if (this.boss.isVulnerable) {
+                  this.boss.health -= 15; // Increased damage for charged attack
+                  this.hitEmitter.explode(30, this.boss.x, this.boss.y);
+                  this.hitSound.play();
+                  this.updateBossHealthBar();
+
+                  // Check if boss is defeated
+                  if (this.boss.health <= 0) {
+                    this.defeatBoss();
+                  }
+                }
               }
+            }
 
-              // Play hurt animation and particle effect
-              enemy.anims.play('enemy_hurt', true);
-              this.hitEmitter.explode(15, enemy.x, enemy.y);
-              // Audio disabled
-              // this.sound.play('hit');
+            // Clean up particles after attack
+            this.time.delayedCall(500, () => {
+              chargedEmitter.stop();
+              chargedParticles.destroy();
+            });
+          } else {
+            // Regular attack
+            // Create attack hitbox with increased range
+            const attackRange = 81; // Increased from 70
+            const attackX = this.player.flipX ? this.player.x - attackRange : this.player.x + attackRange;
+            const attackY = this.player.y;
 
-              // Add safety check for velocity access
-              if (arrow.body && arrow.body.velocity) {
-                // Knock back the enemy
-                if (arrow.body.velocity.x > 0) {
-                  enemy.setVelocityX(100);
+            // Check for enemies in attack range
+            this.enemies.getChildren().forEach(enemy => {
+              if (Phaser.Math.Distance.Between(attackX, attackY, enemy.x, enemy.y) < attackRange) {
+                // Hit enemy
+                enemy.health -= this.player.attackPower;
+
+                // Increased knockback
+                if (enemy.x > this.player.x) {
+                  enemy.setVelocityX(300); // Increased from 100
+                  enemy.setVelocityY(-100); // Added upward knockback
                 } else {
-                  enemy.setVelocityX(-100);
+                  enemy.setVelocityX(-200); // Increased from -100
+                  enemy.setVelocityY(-100); // Added upward knockback
+                }
+
+                // Play hurt animation and particle effect
+                enemy.anims.play('enemy_hurt', true);
+                this.hitEmitter.explode(15, enemy.x, enemy.y);
+                this.hitSound.play();
+
+                // Check if enemy is defeated
+                if (enemy.health <= 0) {
+                  this.defeatEnemy(enemy);
                 }
               }
-              // Check if enemy is defeated
-              if (enemy.health <= 0) {
-                this.defeatEnemy(enemy);
-              }
+            });
 
-              // Destroy arrow safely
-              if (arrow.active) {
-                arrow.destroy();
-              }
-            }
-          });
+            // Check for boss in attack range (level 5)
+            if (this.level === 5 && this.boss && !this.bossDefeated) {
+              if (Phaser.Math.Distance.Between(attackX, attackY, this.boss.x, this.boss.y) < attackRange) {
+                // Only damage if vulnerable
+                if (this.boss.vulnerable) {
+                  this.boss.health -= this.player.attackPower;
+                  this.hitEmitter.explode(20, this.boss.x, this.boss.y);
+                  this.hitSound.play();
+                  this.updateBossHealthBar();
 
-          // Check for boss in attack range (level 5)
-          if (this.level === 5 && this.boss && !this.bossDefeated) {
-            if (Phaser.Math.Distance.Between(this.player.x, this.player.y, this.boss.x, this.boss.y) < 80) {
-              // Only damage if vulnerable
-              if (this.boss.vulnerable) {
-                this.boss.health -= this.player.attackPower;
-                this.hitEmitter.explode(20, this.boss.x, this.boss.y);
-                // Audio disabled
-                // this.sound.play('hit');
-                this.updateBossHealthBar();
-
-                // Check if boss is defeated
-                if (this.boss.health <= 0) {
-                  this.defeatBoss();
-                }
-              } else {
-                // If boss is not vulnerable, bounce player back
-                if (this.player.x < this.boss.x) {
-                  this.player.setVelocityX(-150);
+                  // Check if boss is defeated
+                  if (this.boss.health <= 0) {
+                    this.defeatBoss();
+                  }
                 } else {
-                  this.player.setVelocityX(150);
+                  // If boss is not vulnerable, bounce player back
+                  if (this.player.x < this.boss.x) {
+                    this.player.setVelocityX(-200); // Increased knockback
+                  } else {
+                    this.player.setVelocityX(200); // Increased knockback
+                  }
+                  this.player.setVelocityY(-100); // Added upward knockback
                 }
               }
             }
+
+            // Reset attack state once animation completes
+            this.player.on('animationcomplete', function (anim) {
+              if (anim.key === 'joel_attack') {
+                this.isAttacking = false;
+              }
+            }, this.player);
           }
         }
 
@@ -1008,41 +1180,15 @@
           this.updateBoss();
         }
 
-        // Update enemies
-        this.enemies.getChildren().forEach(enemy => {
-          // Basic AI movement toward player
-          if (enemy.x < this.player.x) {
-            enemy.setVelocityX(50);
-            enemy.flipX = false;
-          } else {
-            enemy.setVelocityX(-50);
-            enemy.flipX = true;
-          }
-
-          // Play walk animation if not attacking or hurt
-          if (!enemy.isAttacking) {
-            enemy.anims.play('enemy_walk', true);
-          }
-
-          // Attack when close
-          if (Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y) < 60 && !enemy.isAttacking) {
-            enemy.isAttacking = true;
-            enemy.anims.play('enemy_attack', true);
-
-            // Reset attack state once animation completes
-            enemy.on('animationcomplete', function (anim) {
-              if (anim.key === 'enemy_attack') {
-                this.isAttacking = false;
-              }
-            }, enemy);
-          }
-        });
-
         // Check for level completion
-        if (this.score >= this.winScore ||
+        if (this.level === 5) {
+          // Only complete level 5 if boss is actually defeated
+          if (this.bossDefeated) {
+            this.completeLevel();
+          }
+        } else if (this.score >= this.winScore ||
           (this.level === 3 && this.crystal && this.crystal.health <= 0) ||
-          (this.level === 4 && this.naomi && this.naomi.rescued) ||
-          (this.level === 5 && this.bossDefeated)) {
+          (this.level === 4 && this.naomi && this.naomi.rescued)) {
           this.completeLevel();
         }
 
@@ -1050,44 +1196,46 @@
       }
 
       spawnEnemy() {
-        // Don't spawn if level is complete
-        if (this.levelComplete) return;
+        // Don't spawn if level is complete or game is paused
+        if (this.levelComplete || this.isPaused) return;
 
+        // Check current number of enemies
+        const currentEnemyCount = this.enemies.getChildren().length;
+        
+        // Don't spawn if at or above max limit
+        if (currentEnemyCount >= this.maxEnemies) return;
 
-        // Increase difficulty with level
-        const enemyCount = 1 + Math.floor(this.level / 2);
+        // Calculate how many enemies to spawn this round
+        const enemiesNeeded = this.maxEnemies - currentEnemyCount;
+        const enemiesToSpawn = Math.min(2, enemiesNeeded); // Spawn at most 2 at a time
 
-        for (let i = 0; i < enemyCount; i++) {
-          if (Phaser.Math.Between(0, 100) > 30) { // 70% chance to spawn
-            const x = Phaser.Math.Between(50, 750);
-            const y = 50;
-            const enemy = this.enemies.create(x, y, 'enemy');
+        for (let i = 0; i < enemiesToSpawn; i++) {
+            if (Phaser.Math.Between(0, 100) > 30) { // 70% chance to spawn
+                const x = Phaser.Math.Between(50, 750);
+                const y = 50;
+                const enemy = this.enemies.create(x, y, 'enemy');
 
-            // Set enemy properties
-            enemy.health = 20 + (5 * this.level);
-            enemy.attackPower = 5 + (this.level * 2);
-            enemy.isAttacking = false;
+                // Set enemy properties
+                enemy.health = 20 + (5 * this.level);
+                enemy.attackPower = 5 + (this.level * 2);
+                enemy.isAttacking = false;
 
-            // Start with walk animation
-            enemy.anims.play('enemy_walk', true);
-          }
+                // Start with walk animation
+                enemy.anims.play('enemy_walk', true);
+            }
         }
-
-
       }
 
       shootArrow() {
         const arrow = this.arrows.create(this.player.x, this.player.y, 'arrow');
-        // Audio disabled
-        // this.sound.play('shoot');
-
+        this.shootSound.play();
 
         // Set velocity based on facing direction
         if (this.player.flipX) {
-          arrow.setVelocityX(-500);
+          arrow.setVelocityX(-800); // Increased from -500
           arrow.angle = 180;
         } else {
-          arrow.setVelocityX(500);
+          arrow.setVelocityX(800); // Increased from 500
         }
 
         // Add trail particle effect
@@ -1101,15 +1249,13 @@
           frequency: 30
         });
 
-        // Destroy after a bit over a second if it doesn't hit anything
-        this.time.delayedCall(1100, () => {
+        // Destroy after 2 seconds if it doesn't hit anything (increased from 1.1 seconds)
+        this.time.delayedCall(2000, () => {
           if (arrow.active) {
             arrow.destroy();
             arrowTrail.stop();
           }
         });
-
-
       }
 
       arrowHitEnemy(arrow, enemy) {
@@ -1121,12 +1267,8 @@
         // Create hit effect
         this.hitEmitter.explode(10, enemy.x, enemy.y);
 
-        // Try-catch around audio to prevent errors if audio is disabled
-        try {
-          this.sound.play('hit');
-        } catch (e) {
-          // Audio disabled or error
-        }
+        // Play hit sound
+        this.hitSound.play();
 
         // Damage enemy
         enemy.health -= 1000;
@@ -1232,18 +1374,19 @@
 
       handleEnemyCollision(player, enemy) {
         if (!player || !player.active || !enemy || !enemy.active) return;
-        // Only take damage if enemy is attacking
+        
+        // Reduce damage if player is stealthed
+        const damageMultiplier = this.player.isStealthed ? 0.5 : 1;
+        
         if (enemy.isAttacking && !this.player.invulnerable) {
-          // Reduce lives
-          this.lives--;
+          // Reduce lives with stealth modifier
+          this.lives -= damageMultiplier;
           this.livesText.setText('Lives: ' + this.lives);
-
 
           // Visual feedback
           this.player.anims.play('joel_hurt', true);
           this.hitEmitter.explode(15, player.x, player.y);
-          // Audio disabled
-          // this.sound.play('hit');
+          this.hitSound.play();
 
           // Make player temporarily invulnerable
           this.player.invulnerable = true;
@@ -1251,16 +1394,16 @@
 
           // Knockback
           if (player.x < enemy.x) {
-            player.setVelocityX(-150);
+            player.setVelocityX(-200);
           } else {
-            player.setVelocityX(150);
+            player.setVelocityX(200);
           }
           player.setVelocityY(-100);
 
           // Reset invulnerability after 1 second
           this.time.delayedCall(1000, function () {
             this.player.invulnerable = false;
-            this.player.alpha = 1;
+            this.player.alpha = this.player.isStealthed ? 0.6 : 1;
           }, [], this);
 
           // Check if game over
@@ -1273,6 +1416,9 @@
       }
 
       updateBoss() {
+        // Check if boss exists and is active
+        if (!this.boss || !this.boss.active || this.bossDefeated) return;
+
         // Basic boss AI based on phase
         switch (this.boss.phase) {
           case 1: // Circling phase
@@ -1280,7 +1426,6 @@
             const distX = this.player.x - this.boss.x;
             const distY = this.player.y - this.boss.y;
             const dist = Math.sqrt(distX * distX + distY * distY);
-
 
             if (dist > 200) {
               // Move closer
@@ -1303,7 +1448,7 @@
             }
 
             // Phase transition
-            if (this.boss.health <= 70) {
+            if (this.boss.health <= 70 && this.boss.phase === 1) {
               this.boss.phase = 2;
               this.boss.vulnerable = false;
               this.bossSpecialAttack();
@@ -1331,7 +1476,7 @@
             }
 
             // Phase transition
-            if (this.boss.health <= 30) {
+            if (this.boss.health <= 30 && this.boss.phase === 2) {
               this.boss.phase = 3;
               this.boss.vulnerable = false;
               this.bossSpecialAttack();
@@ -1360,8 +1505,6 @@
             }
             break;
         }
-
-
       }
 
       bossMeleeAttack() {
@@ -1417,45 +1560,43 @@
       }
 
       bossSpecialAttack() {
-        // Boss activates injection sites (from story)
+        if (!this.boss || this.bossDefeated) return;
+
         this.boss.isAttacking = true;
         this.boss.anims.play('boss_special', true);
-
+        this.bossRoarSound.play();
 
         // Visual effects
         this.cameras.main.flash(500, 255, 50, 50);
-        // Audio disabled
-        // this.sound.play('levelup');
-
-        // Create particle burst
         this.hitEmitter.explode(50, this.boss.x, this.boss.y);
 
-        // After animation, boss becomes vulnerable at injection sites
+        // Make boss vulnerable
         this.time.delayedCall(1000, () => {
           this.boss.isAttacking = false;
-          this.boss.vulnerable = true;
+          this.boss.isVulnerable = true;
+          this.bossVulnerableIndicator.setText('BOSS VULNERABLE!').setVisible(true);
 
-          // Text hint
-          const hintText = this.add.text(400, 120, "Attack the glowing injection sites!", {
-            fontSize: '18px',
-            fontFamily: 'Arial, sans-serif',
-            fill: '#ffffff',
-            backgroundColor: '#e74c3c',
-            padding: { x: 10, y: 5 }
-          }).setOrigin(0.5).setDepth(100);
-
-          // Remove hint after 3 seconds
-          this.time.delayedCall(3000, () => {
-            hintText.destroy();
+          // Show injection sites with particles
+          this.vulnerabilityEmitter = this.particles.createEmitter({
+            x: this.boss.x,
+            y: this.boss.y,
+            follow: this.boss,
+            scale: { start: 0.2, end: 0 },
+            alpha: { start: 1, end: 0 },
+            tint: 0x00ff00,
+            lifespan: 1000,
+            frequency: 50
           });
 
-          // Boss is vulnerable for 5 seconds
+          // End vulnerability after duration
           this.time.delayedCall(5000, () => {
-            this.boss.vulnerable = false;
+            this.boss.isVulnerable = false;
+            this.bossVulnerableIndicator.setVisible(false);
+            if (this.vulnerabilityEmitter) {
+              this.vulnerabilityEmitter.stop();
+            }
           });
         });
-
-
       }
 
       handleBossCollision(player, boss) {
@@ -1501,17 +1642,16 @@
       }
 
       arrowHitBoss(arrow, boss) {
-        if (!arrow || !arrow.active || !boss || !boss.active) return;
+        if (!arrow || !arrow.active || !boss || !boss.active || this.bossDefeated) return;
+        
         // Only take damage if boss is vulnerable
-        if (this.boss.vulnerable) {
+        if (this.boss.isVulnerable) {
           // Create hit effect
           this.hitEmitter.explode(15, boss.x, boss.y);
-          // Audio disabled
-          // this.sound.play('hit');
+          this.bossHitSound.play();
         
-
-          // Damage boss
-          this.boss.health -= 10;
+          // Damage boss - reduced from 10 to 5 per hit
+          this.boss.health -= 5;
           this.updateBossHealthBar();
 
           // Check if boss is defeated
@@ -1525,34 +1665,46 @@
 
         // Destroy arrow
         arrow.destroy();
-
-
       }
 
       updateBossHealthBar() {
+        if (!this.boss || !this.bossHealthBar) return;
+
         this.bossHealthBar.clear();
-
-
+        
         // Background
         this.bossHealthBar.fillStyle(0x000000, 0.5);
         this.bossHealthBar.fillRect(300, 80, 200, 20);
 
-        // Health (red, scales with current health)
-        const healthPercent = Math.max(0, this.boss.health / 100);
-        this.bossHealthBar.fillStyle(0xe74c3c, 1);
+        // Health bar with phase colors
+        const healthPercent = Math.max(0, this.boss.health / 150);
+        let barColor;
+        if (this.boss.health > 70) {
+          barColor = 0xe74c3c; // Red for phase 1
+        } else if (this.boss.health > 30) {
+          barColor = 0xf39c12; // Orange for phase 2
+        } else {
+          barColor = 0x9b59b6; // Purple for phase 3
+        }
+
+        this.bossHealthBar.fillStyle(barColor, 1);
         this.bossHealthBar.fillRect(300, 80, 200 * healthPercent, 20);
 
-
+        // Show vulnerability state
+        if (this.boss.isVulnerable) {
+          this.bossHealthBar.lineStyle(2, 0x00ff00);
+          this.bossHealthBar.strokeRect(300, 80, 200, 20);
+        }
       }
 
       defeatBoss() {
+        if (this.bossDefeated) return; // Prevent multiple defeat calls
+        
         this.bossDefeated = true;
-
 
         // Create massive explosion
         this.hitEmitter.explode(100, this.boss.x, this.boss.y);
-        // Audio disabled
-        // this.sound.play('levelup');
+        this.bossRoarSound.play();
 
         // Camera effects
         this.cameras.main.shake(1000, 0.03);
@@ -1566,13 +1718,26 @@
         this.objectiveText.setText("Objective Complete: Kain has been defeated!");
         this.objectiveText.setColor('#00ff00');
 
+        // Clean up boss-related elements
+        if (this.bossHealthBar) {
+            this.bossHealthBar.destroy();
+            this.bossHealthBar = null;
+        }
+        if (this.bossVulnerableIndicator) {
+            this.bossVulnerableIndicator.destroy();
+            this.bossVulnerableIndicator = null;
+        }
+        if (this.vulnerabilityEmitter) {
+            this.vulnerabilityEmitter.stop();
+            this.vulnerabilityEmitter = null;
+        }
+
         // Remove boss
         this.boss.destroy();
+        this.boss = null;
 
         // Complete level after short delay
         this.time.delayedCall(2000, this.completeLevel, [], this);
-
-
       }
 
       rescueNaomi(player, naomi) {
@@ -1621,7 +1786,6 @@
       completeLevel() {
         if (this.levelComplete) return;
 
-
         this.levelComplete = true;
 
         // Stop enemy spawning
@@ -1629,8 +1793,7 @@
 
         // Visual effects
         this.cameras.main.flash(1000, 255, 255, 255);
-        // Audio disabled
-        // this.sound.play('levelup');
+        this.levelUpSound.play();
 
         // Display level complete text
         const completionText = this.add.text(400, 300, 'LEVEL COMPLETE', {
@@ -1657,7 +1820,6 @@
         this.time.delayedCall(3000, () => {
           // Progress to next level
           let nextLevel = this.level + 1;
-
 
           // Extra lives for completing a level
           this.lives += 1;
@@ -1704,6 +1866,339 @@
         });
 
 
+      }
+
+      toggleStealth() {
+        if (this.player.stealthCooldown) return;
+        
+        this.player.isStealthed = !this.player.isStealthed;
+        
+        if (this.player.isStealthed) {
+          // Start stealth duration timer
+          this.time.delayedCall(5000, () => {
+            this.player.isStealthed = false;
+            this.player.stealthCooldown = true;
+            
+            // Cooldown timer
+            this.time.delayedCall(3000, () => {
+              this.player.stealthCooldown = false;
+            });
+          });
+        }
+      }
+
+      drawVisionCone(enemy) {
+        const visionRange = 200;
+        const visionAngle = Math.PI / 3; // 60 degrees
+        
+        // Direction based on enemy facing
+        const direction = enemy.flipX ? Math.PI : 0;
+        
+        this.visionCones.lineStyle(2, 0xff0000, 0.3);
+        this.visionCones.beginPath();
+        this.visionCones.moveTo(enemy.x, enemy.y);
+        
+        // Draw arc for vision cone
+        this.visionCones.arc(
+          enemy.x, 
+          enemy.y, 
+          visionRange,
+          direction - visionAngle/2,
+          direction + visionAngle/2
+        );
+        
+        this.visionCones.closePath();
+        this.visionCones.fillStyle(0xff0000, 0.1);
+        this.visionCones.fill();
+      }
+
+      isPlayerInVisionCone(enemy) {
+        const distance = Phaser.Math.Distance.Between(
+          enemy.x, enemy.y,
+          this.player.x, this.player.y
+        );
+        
+        if (distance > enemy.detectionRadius) return false;
+        
+        const angle = Phaser.Math.Angle.Between(
+          enemy.x, enemy.y,
+          this.player.x, this.player.y
+        );
+        
+        const visionAngle = Math.PI / 3;
+        const direction = enemy.flipX ? Math.PI : 0;
+        
+        const angleDiff = Phaser.Math.Angle.Wrap(angle - direction);
+        
+        return Math.abs(angleDiff) <= visionAngle/2;
+      }
+
+      updateDetectionMeter() {
+        this.detectionMeter.clear();
+        
+        // Draw background
+        this.detectionMeter.fillStyle(0x000000, 0.5);
+        this.detectionMeter.fillRect(16, 90, 100, 10);
+        
+        // Draw detection level
+        const color = this.player.detectionLevel < 50 ? 0x00ff00 :
+                     this.player.detectionLevel < 80 ? 0xffff00 : 0xff0000;
+        
+        this.detectionMeter.fillStyle(color, 1);
+        this.detectionMeter.fillRect(16, 90, this.player.detectionLevel, 10);
+      }
+
+      alertEnemies() {
+        this.enemies.getChildren().forEach(enemy => {
+          // Make enemies more aggressive
+          enemy.setVelocityX(this.player.x > enemy.x ? 100 : -100);
+          enemy.aggroState = true;
+        });
+      }
+
+      togglePause() {
+        this.isPaused = !this.isPaused;
+        
+        if (this.isPaused) {
+            // Pause physics and animations
+            this.physics.pause();
+            this.anims.pauseAll();
+            
+            // Hide the in-game controls while paused
+            if (this.leftControlsText) this.leftControlsText.setVisible(false);
+            if (this.rightControlsText) this.rightControlsText.setVisible(false);
+            
+            // Create semi-transparent background
+            const overlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.7);
+            
+            // Create pause menu container
+            this.pauseMenu = this.add.container(400, 300);
+            
+            // Title
+            const title = this.add.text(0, -150, 'PAUSED', {
+              fontSize: '48px',
+              fontFamily: 'Arial, sans-serif',
+              fill: '#ffffff',
+              stroke: '#e74c3c',
+              strokeThickness: 6
+            }).setOrigin(0.5);
+            
+            // Create buttons
+            const buttonStyle = {
+              fontSize: '24px',
+              fontFamily: 'Arial, sans-serif',
+              fill: '#ffffff',
+              backgroundColor: '#e74c3c',
+              padding: { x: 20, y: 10 }
+            };
+
+            const resumeButton = this.add.text(0, -50, 'Resume Game', buttonStyle)
+              .setOrigin(0.5)
+              .setInteractive({ useHandCursor: true })
+              .on('pointerover', () => resumeButton.setScale(1.1))
+              .on('pointerout', () => resumeButton.setScale(1))
+              .on('pointerdown', () => this.togglePause());
+
+            const restartButton = this.add.text(0, 0, 'Restart Level', buttonStyle)
+              .setOrigin(0.5)
+              .setInteractive({ useHandCursor: true })
+              .on('pointerover', () => restartButton.setScale(1.1))
+              .on('pointerout', () => restartButton.setScale(1))
+              .on('pointerdown', () => {
+                this.togglePause();
+                this.scene.restart({ 
+                  level: this.level, 
+                  lives: this.lives, 
+                  score: this.score 
+                });
+              });
+
+            // Volume controls
+            const volumeText = this.add.text(0, 50, 'Volume', buttonStyle).setOrigin(0.5);
+            
+            const volumeBar = this.add.graphics();
+            volumeBar.lineStyle(2, 0xffffff);
+            volumeBar.strokeRect(-100, 80, 200, 20);
+            
+            const volumeLevel = this.add.graphics();
+            this.updateVolumeBar(volumeLevel);
+            
+            // Make volume bar interactive
+            const volumeHitArea = this.add.rectangle(0, 90, 200, 20, 0xffffff, 0)
+              .setOrigin(0.5)
+              .setInteractive({ useHandCursor: true })
+              .on('pointerdown', (pointer) => {
+                const bounds = volumeHitArea.getBounds();
+                const volume = Phaser.Math.Clamp((pointer.x - bounds.left) / bounds.width, 0, 1);
+                this.masterVolume = volume;
+                this.updateVolumeBar(volumeLevel);
+                this.updateGameVolume();
+              });
+
+            // Controls button
+            const controlsButton = this.add.text(0, 140, 'View Controls', buttonStyle)
+              .setOrigin(0.5)
+              .setInteractive({ useHandCursor: true })
+              .on('pointerover', () => controlsButton.setScale(1.1))
+              .on('pointerout', () => controlsButton.setScale(1))
+              .on('pointerdown', () => this.showControls());
+
+            // Add everything to the container
+            this.pauseMenu.add([
+              overlay,
+              title,
+              resumeButton,
+              restartButton,
+              volumeText,
+              volumeBar,
+              volumeLevel,
+              volumeHitArea,
+              controlsButton
+            ]);
+
+        } else {
+            // Resume game
+            this.physics.resume();
+            this.anims.resumeAll();
+            
+            // Show the in-game controls again
+            if (this.leftControlsText) this.leftControlsText.setVisible(true);
+            if (this.rightControlsText) this.rightControlsText.setVisible(true);
+            
+            // Destroy pause menu
+            if (this.pauseMenu) {
+                this.pauseMenu.destroy();
+                this.pauseMenu = null;
+            }
+        }
+      }
+
+      updateVolumeBar(volumeLevel) {
+        volumeLevel.clear();
+        volumeLevel.fillStyle(0xe74c3c);
+        volumeLevel.fillRect(-98, 82, 196 * this.masterVolume, 16);
+      }
+
+      updateGameVolume() {
+        // Update all sound volumes
+        if (this.theme) this.theme.setVolume(0.5 * this.masterVolume);
+        if (this.hitSound) this.hitSound.setVolume(0.3 * this.masterVolume);
+        if (this.shootSound) this.shootSound.setVolume(0.3 * this.masterVolume);
+        if (this.levelUpSound) this.levelUpSound.setVolume(0.5 * this.masterVolume);
+        if (this.bossHitSound) this.bossHitSound.setVolume(0.4 * this.masterVolume);
+        if (this.bossRoarSound) this.bossRoarSound.setVolume(0.5 * this.masterVolume);
+      }
+
+      showControls() {
+        // Remove existing controls overlay if it exists
+        if (this.controlsOverlay) {
+          this.controlsOverlay.destroy();
+          return;
+        }
+
+        // Create controls overlay
+        this.controlsOverlay = this.add.container(400, 300);
+
+        const bg = this.add.rectangle(0, 0, 500, 400, 0x000000, 0.9);
+        
+        const title = this.add.text(0, -150, 'CONTROLS', {
+          fontSize: '32px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#ffffff',
+          stroke: '#e74c3c',
+          strokeThickness: 4
+        }).setOrigin(0.5);
+
+        let controlsText = "Movement:\n";
+        controlsText += "← → : Move Left/Right\n";
+        controlsText += "↑ : Jump\n\n";
+        controlsText += "Combat:\n";
+        controlsText += "Z : Melee Attack\n";
+        controlsText += "X : Shoot Arrow\n";
+        
+        if (this.level >= 3) {
+          controlsText += "S : Toggle Stealth\n";
+        }
+        if (this.level >= 4) {
+          controlsText += "Hold Z : Charged Attack\n";
+        }
+        if (this.level >= 5) {
+          controlsText += "C : Special Attack\n";
+        }
+
+        controlsText += "\nOther:\n";
+        controlsText += "ESC : Pause Game\n";
+        controlsText += "\nClick anywhere to close";
+
+        const controls = this.add.text(0, 0, controlsText, {
+          fontSize: '20px',
+          fontFamily: 'Arial, sans-serif',
+          fill: '#ffffff',
+          align: 'center',
+          lineSpacing: 10
+        }).setOrigin(0.5);
+
+        this.controlsOverlay.add([bg, title, controls]);
+
+        // Click anywhere to close
+        bg.setInteractive()
+          .on('pointerdown', () => {
+            this.controlsOverlay.destroy();
+            this.controlsOverlay = null;
+          });
+      }
+
+      updateControlsDisplay() {
+        // Remove existing control texts if they exist
+        if (this.leftControlsText) this.leftControlsText.destroy();
+        if (this.rightControlsText) this.rightControlsText.destroy();
+
+        // Base controls
+        let leftControls = "← → : Move   ↑ : Jump";
+        let rightControls = "Z: Attack   X: Shoot";
+
+        // Add level-specific controls
+        if (this.level >= 3) {
+            rightControls += "   S: Stealth";
+        }
+        if (this.level >= 4) {
+            rightControls += "   Hold Z: Charged";
+        }
+        if (this.level >= 5) {
+            rightControls += "   C: Special";
+        }
+
+        // Create new control texts
+        this.leftControlsText = this.add.text(16, 550, leftControls, {
+            fontSize: '12px',
+            fontFamily: 'Arial, sans-serif',
+            fill: '#cccccc',
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            padding: { x: 5, y: 3 }
+        });
+
+        this.rightControlsText = this.add.text(784, 550, rightControls, {
+            fontSize: '12px',
+            fontFamily: 'Arial, sans-serif',
+            fill: '#cccccc',
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            padding: { x: 5, y: 3 }
+        }).setOrigin(1, 0);
+
+        // Flash effect for new controls
+        if (this.level === 3 || this.level === 4 || this.level === 5) {
+            this.rightControlsText.setTint(0xffff00);
+            this.tweens.add({
+                targets: this.rightControlsText,
+                alpha: 0.5,
+                duration: 500,
+                yoyo: true,
+                repeat: 3,
+                onComplete: () => {
+                    this.rightControlsText.clearTint();
+                }
+            });
+        }
       }
     }
 
