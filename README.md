@@ -1,6 +1,6 @@
 # **Phenom's Ascension**  
 
-![](https://images.type.ai/img_5vS0YVM5OHpJwlvAHj.png)  
+![](https://github.com/ojomusi/Phenom-s-Ascension/blob/main/assets/images/backgrounds/landing.png)  
 
 ## **Overview**  
 
@@ -11,13 +11,12 @@
 - Unlock **new abilities** as you progress.  
 - Uncover the **secrets of the Hunter Association** and **defeat Kain**.  
 
-🎮 **[Play the Game](https://ojomusi.github.io/phenoms-ascension)** | 📖 **[View the Storyboard](docs/storyboard.md)**  
 
 ---
 
 ## **Phenom's Ascension (GPT) – AI-Powered Interactive Adventure**  
 
-**Phenom's Ascension (GPT)** is an **AI-driven interactive adventure** that laid the foundation for the game's **story, morality system, and progression mechanics**. Inspired by *Solo Leveling* and *Kingdom Hearts*, it allows players to step into a **dynamic, choice-based world** where **every decision** shapes their journey.  
+**Phenom's Ascension (GPT)** is an **AI-driven interactive adventure** GPT on ChatGPT that laid the foundation for the game's **story, morality system, and progression mechanics**. Inspired by *Solo Leveling* and *Kingdom Hearts*, it allows players to step into a **dynamic, choice-based world** where **every decision** shapes their journey.  
 
 ### **Key Features:**  
 ✅ **Adaptive Storytelling** – Choices lead to multiple endings, including a *Kingdom Hearts*-style emotional conclusion.  
